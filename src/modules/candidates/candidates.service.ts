@@ -107,10 +107,13 @@ export class CandidatesService {
 
   async findOne(id: string): Promise<CandidateDetailDto> {
     const candidate = await this.load(id);
-    const [applications, cvDocuments] = await Promise.all([
+    const [applications, cvDocuments, consents] = await Promise.all([
       this.applications.find({ where: { candidateId: id }, order: { createdAt: 'DESC' } }),
       this.cvDocuments.find({ where: { candidateId: id }, order: { createdAt: 'DESC' } }),
+      this.consents.find({ where: { candidateId: id }, order: { createdAt: 'DESC' } }),
     ]);
+    const latest = new Map<string, Consent>();
+    for (const c of consents) if (!latest.has(c.type)) latest.set(c.type, c);
     return {
       ...toCandidateDto(candidate),
       applications: applications.map((a) => ({
@@ -122,6 +125,7 @@ export class CandidatesService {
         createdAt: a.createdAt,
       })),
       cvDocuments: cvDocuments.map((d) => ({ id: d.id, originalName: d.originalName, createdAt: d.createdAt })),
+      consents: [...latest.values()].map((c) => ({ type: c.type, granted: c.granted, at: c.createdAt })),
     };
   }
 

@@ -56,6 +56,8 @@ export interface CandidateDetailDto extends CandidateDto {
     createdAt: Date;
   }[];
   cvDocuments: { id: string; originalName: string; createdAt: Date }[];
+  /** Última decisión de la persona sobre cada permiso (voz, imagen, ubicación). */
+  consents: { type: string; granted: boolean; at: Date }[];
 }
 
 export const toCandidateDto = (c: Candidate): CandidateDto => ({
