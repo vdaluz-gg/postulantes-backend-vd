@@ -6,6 +6,7 @@ import { AppEnv } from './config/env.validation';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CandidatesModule } from './modules/candidates/candidates.module';
+import { CvModule } from './modules/cv/cv.module';
 import { JobOffersModule } from './modules/job-offers/job-offers.module';
 import { ZonesModule } from './modules/zones/zones.module';
 import { CvStorageModule } from './modules/cv/cv-storage.module';
@@ -24,6 +25,7 @@ import { HealthController } from './modules/health/health.controller';
     JobOffersModule,
     AuthModule,
     CandidatesModule,
+    CvModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

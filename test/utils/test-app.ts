@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
+import { Test, TestingModuleBuilder } from '@nestjs/testing';
 import { randomUUID } from 'crypto';
 import { DataType, newDb } from 'pg-mem';
 import { DataSource } from 'typeorm';
@@ -43,15 +43,17 @@ export interface TestApp {
   storage: InMemoryFileStorage;
 }
 
-export async function createTestApp(): Promise<TestApp> {
+/** Arma la app de pruebas. `customize` permite reemplazar proveedores (por ejemplo, una IA que falla). */
+export async function createTestApp(customize?: (builder: TestingModuleBuilder) => TestingModuleBuilder): Promise<TestApp> {
   const dataSource = await createTestDataSource();
   const storage = new InMemoryFileStorage();
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+  let builder = Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(DataSource)
     .useValue(dataSource)
     .overrideProvider(FILE_STORAGE)
-    .useValue(storage)
-    .compile();
+    .useValue(storage);
+  if (customize) builder = customize(builder);
+  const moduleRef = await builder.compile();
   const app = moduleRef.createNestApplication();
   configureApp(app, validateEnv(process.env));
   await app.init();

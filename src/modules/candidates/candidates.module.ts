@@ -15,6 +15,6 @@ import { Candidate } from './entities/candidate.entity';
   imports: [TypeOrmModule.forFeature([Candidate, Zone, Application, CvDocument, Consent]), AuthModule],
   controllers: [CandidatesController, BackofficeCandidatesController],
   providers: [CandidatesService, CandidateValidationService],
-  exports: [CandidatesService, TypeOrmModule],
+  exports: [CandidatesService, CandidateValidationService, TypeOrmModule],
 })
 export class CandidatesModule {}

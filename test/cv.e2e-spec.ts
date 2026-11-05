@@ -1,0 +1,103 @@
+import { INestApplication } from '@nestjs/common';
+import request from 'supertest';
+import { DataSource } from 'typeorm';
+import { seedReferenceData } from '../src/database/seed/seed';
+import { CvDocument } from '../src/modules/cv/entities/cv-document.entity';
+import { CV_READER, CvReader } from '../src/modules/cv/ports/cv-reader';
+import { Zone } from '../src/modules/zones/entities/zone.entity';
+import { createTestApp, InMemoryFileStorage } from './utils/test-app';
+
+const pdf = (extra = '') => Buffer.from(`%PDF-1.4\n${extra}\n%%EOF`);
+
+describe('Subir CV con IA (integración)', () => {
+  let app: INestApplication;
+  let ds: DataSource;
+  let storage: InMemoryFileStorage;
+  const http = () => request(app.getHttpServer());
+
+  beforeAll(async () => {
+    ({ app, dataSource: ds, storage } = await createTestApp());
+    await seedReferenceData(ds);
+  });
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('lee el CV y devuelve los datos para precargar el formulario, ya validados', async () => {
+    const res = await http().post('/api/v1/cv').attach('file', pdf(), { filename: 'mi cv.pdf', contentType: 'application/pdf' }).expect(201);
+    const zone = await ds.getRepository(Zone).findOneByOrFail({ name: 'Monte Grande' });
+    expect(res.body.cvId).toEqual(expect.any(String));
+    expect(res.body.fileName).toBe('mi cv.pdf');
+    expect(res.body.prefill).toEqual({
+      fullName: 'Martina Rodríguez',
+      dni: '38.412.907',
+      whatsapp: '11 5555-0142',
+      zone: 'Monte Grande',
+      zoneId: zone.id,
+    });
+    expect(res.body.validation.valid).toBe(true);
+    expect(res.body.validation.fields.dni.normalized).toBe('38412907');
+  });
+
+  it('guarda el archivo con un nombre generado por el servidor y deja el registro', async () => {
+    const before = storage.files.size;
+    const res = await http().post('/api/v1/cv').attach('file', pdf('otro'), { filename: '../../etc/passwd.pdf', contentType: 'application/pdf' }).expect(201);
+    expect(storage.files.size).toBe(before + 1);
+    const doc = await ds.getRepository(CvDocument).findOneByOrFail({ id: res.body.cvId });
+    expect(doc.originalName).toBe('passwd.pdf');
+    expect(doc.storageKey).toMatch(/^[0-9a-f-]{36}\.pdf$/);
+    expect(doc.mimeType).toBe('application/pdf');
+    expect(doc.candidateId).toBeNull();
+    expect(storage.files.has(doc.storageKey)).toBe(true);
+  });
+
+  it('acepta DOCX', async () => {
+    const docx = Buffer.concat([Buffer.from([0x50, 0x4b, 0x03, 0x04]), Buffer.from('[Content_Types].xml word/document.xml')]);
+    await http().post('/api/v1/cv').attach('file', docx, { filename: 'cv.docx' }).expect(201);
+  });
+
+  it('rechaza lo que no es PDF/DOC/DOCX aunque la extensión diga lo contrario', async () => {
+    const before = storage.files.size;
+    const res = await http().post('/api/v1/cv').attach('file', Buffer.from('MZ ejecutable'), { filename: 'virus.pdf', contentType: 'application/pdf' }).expect(415);
+    expect(res.body.message).toBe('El archivo no es un PDF, DOC o DOCX válido');
+    expect(storage.files.size).toBe(before);
+  });
+
+  it('rechaza archivos de más de 5 MB', async () => {
+    const big = Buffer.concat([Buffer.from('%PDF-1.4\n'), Buffer.alloc(5 * 1024 * 1024 + 10)]);
+    await http().post('/api/v1/cv').attach('file', big, { filename: 'grande.pdf' }).expect(413);
+  });
+
+  it('pide el archivo si no viene', async () => {
+    const res = await http().post('/api/v1/cv').expect(400);
+    expect(res.body.message).toBe('Adjuntá tu CV');
+  });
+
+  it('rechaza archivos en un campo que no es "file"', async () => {
+    await http().post('/api/v1/cv').attach('otro', pdf(), { filename: 'cv.pdf' }).expect(400);
+  });
+
+  it('rechaza archivos vacíos', async () => {
+    await http().post('/api/v1/cv').attach('file', Buffer.alloc(0), { filename: 'cv.pdf' }).expect(400);
+  });
+});
+
+describe('Subir CV cuando la IA falla (integración)', () => {
+  it('avisa que se complete a mano y no deja archivos huérfanos', async () => {
+    const failing: CvReader = {
+      read: async () => {
+        throw new Error('timeout del proveedor de IA 10.1.2.3');
+      },
+    };
+    const { app, dataSource, storage } = await createTestApp((b) => b.overrideProvider(CV_READER).useValue(failing));
+    try {
+      const res = await request(app.getHttpServer()).post('/api/v1/cv').attach('file', pdf(), { filename: 'cv.pdf' }).expect(502);
+      expect(res.body.message).toBe('No pudimos leer tu CV. Completá los datos a mano');
+      expect(JSON.stringify(res.body)).not.toContain('10.1.2.3');
+      expect(storage.files.size).toBe(0);
+      expect(await dataSource.getRepository(CvDocument).count()).toBe(0);
+    } finally {
+      await app.close();
+    }
+  });
+});
