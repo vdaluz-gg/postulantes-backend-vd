@@ -1,0 +1,23 @@
+import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { AppConfigModule, APP_ENV } from './config/app-config.module';
+import { AppEnv } from './config/env.validation';
+import { DatabaseModule } from './database/database.module';
+import { CvStorageModule } from './modules/cv/cv-storage.module';
+import { HealthController } from './modules/health/health.controller';
+
+@Module({
+  imports: [
+    AppConfigModule,
+    ThrottlerModule.forRootAsync({
+      inject: [APP_ENV],
+      useFactory: (env: AppEnv) => [{ ttl: 60_000, limit: env.THROTTLE_LIMIT }],
+    }),
+    DatabaseModule,
+    CvStorageModule,
+  ],
+  controllers: [HealthController],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+})
+export class AppModule {}

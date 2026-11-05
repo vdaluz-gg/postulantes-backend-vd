@@ -13,6 +13,8 @@ export interface AppEnv {
   readonly JWT_EXPIRES_IN: string;
   readonly ADMIN_REGISTRATION_KEY: string;
   readonly UPLOAD_DIR: string;
+  /** Pedidos por minuto y por IP. */
+  readonly THROTTLE_LIMIT: number;
   readonly RENAPER_ENABLED: boolean;
   readonly RENAPER_BASE_URL: string;
   readonly RENAPER_CLIENT_ID: string;
@@ -80,6 +82,7 @@ export function validateEnv(raw: Raw): AppEnv {
     JWT_EXPIRES_IN: str(raw, 'JWT_EXPIRES_IN', '8h'),
     ADMIN_REGISTRATION_KEY: registrationKey,
     UPLOAD_DIR: str(raw, 'UPLOAD_DIR', './uploads'),
+    THROTTLE_LIMIT: Number(str(raw, 'THROTTLE_LIMIT', '120')) || 120,
     RENAPER_ENABLED: renaper,
     RENAPER_BASE_URL: str(raw, 'RENAPER_BASE_URL'),
     RENAPER_CLIENT_ID: str(raw, 'RENAPER_CLIENT_ID'),
