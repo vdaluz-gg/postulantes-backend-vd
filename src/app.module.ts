@@ -4,6 +4,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppConfigModule, APP_ENV } from './config/app-config.module';
 import { AppEnv } from './config/env.validation';
 import { DatabaseModule } from './database/database.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { JobOffersModule } from './modules/job-offers/job-offers.module';
 import { ZonesModule } from './modules/zones/zones.module';
 import { CvStorageModule } from './modules/cv/cv-storage.module';
@@ -20,6 +21,7 @@ import { HealthController } from './modules/health/health.controller';
     CvStorageModule,
     ZonesModule,
     JobOffersModule,
+    AuthModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
