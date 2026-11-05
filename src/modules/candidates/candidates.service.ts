@@ -6,6 +6,7 @@ import { escapeLike } from '../../common/utils/like';
 import { Application } from '../applications/entities/application.entity';
 import { Consent } from '../consents/entities/consent.entity';
 import { CvDocument } from '../cv/entities/cv-document.entity';
+import { IdentityVerification } from '../identity/entities/identity-verification.entity';
 import { FILE_STORAGE, FileStorage } from '../cv/ports/file-storage';
 import { Zone } from '../zones/entities/zone.entity';
 import { CandidateContactDto } from './dto/candidate-contact.dto';
@@ -170,6 +171,7 @@ export class CandidatesService {
     await this.dataSource.transaction(async (tx) => {
       await tx.delete(Application, { candidateId: id });
       await tx.delete(Consent, { candidateId: id });
+      await tx.delete(IdentityVerification, { candidateId: id });
       await tx.delete(CvDocument, { candidateId: id });
       await tx.delete(Candidate, { id });
     });
