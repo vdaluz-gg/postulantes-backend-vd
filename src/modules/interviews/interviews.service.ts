@@ -4,6 +4,7 @@ import { DataSource, Repository } from 'typeorm';
 import { Page } from '../../common/pagination';
 import { appendHistory } from '../applications/application-flow';
 import { Application } from '../applications/entities/application.entity';
+import { candidateNameParts } from '../candidates/dto/candidate.dto';
 import {
   DEFAULT_INTERVIEW_MINUTES,
   InterviewAgendaItemDto,
@@ -104,7 +105,7 @@ export class InterviewsService {
     return {
       items: rows.map((i) => ({
         ...toInterviewDto(i),
-        candidate: { id: i.application.candidate.id, fullName: i.application.candidate.fullName },
+        candidate: { id: i.application.candidate.id, fullName: i.application.candidate.fullName, ...candidateNameParts(i.application.candidate) },
         position: i.application.position,
       })),
       total,

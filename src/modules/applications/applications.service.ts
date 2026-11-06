@@ -65,7 +65,8 @@ export class ApplicationsService {
     const cv = dto.cvId ? await this.cvs.findOneBy({ id: dto.cvId }) : null;
     if (dto.cvId && (!cv || (cv.candidateId && cv.candidateId !== existing?.id))) throw new BadRequestException('El CV no es válido');
 
-    const contact = { ...dto, position };
+    // Un CUIL vacío no borra el que ya estaba guardado: en la postulación es opcional.
+    const contact = { ...dto, position, cuil: dto.cuil || undefined };
     const candidateId = existing
       ? (await this.candidatesService.update(existing.id, contact)).id
       : (await this.candidatesService.create(contact, cv ? 'cv_ai' : 'manual', dto.channel ?? 'new_web')).id;

@@ -3,6 +3,9 @@ import { IsOptional, IsString, MaxLength } from 'class-validator';
 /** Campos a validar. Todos opcionales: se evalúan solo los que llegan (validación mientras se completa el formulario). */
 export class ValidateCandidateDto {
   @IsOptional() @IsString() @MaxLength(300) fullName?: string;
+  @IsOptional() @IsString() @MaxLength(300) firstName?: string;
+  @IsOptional() @IsString() @MaxLength(300) lastName?: string;
+  @IsOptional() @IsString() @MaxLength(300) cuil?: string;
   @IsOptional() @IsString() @MaxLength(300) email?: string;
   @IsOptional() @IsString() @MaxLength(300) dni?: string;
   @IsOptional() @IsString() @MaxLength(300) whatsapp?: string;

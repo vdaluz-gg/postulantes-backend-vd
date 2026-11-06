@@ -26,24 +26,38 @@ describe('Subir CV con IA (integración)', () => {
   });
 
   it('lee el CV y devuelve los datos para precargar el formulario, ya validados', async () => {
-    const cv = textPdf(['Lucía Fernández', 'DNI 40.123.456', 'Celular: 11 4444-0101', 'lucia@ejemplo.com', 'Localidad: Monte Grande']);
+    const cv = textPdf(['Lucía Fernández', 'DNI 40.123.456', 'CUIL 27-40123456-5', 'Celular: 11 4444-0101', 'lucia@ejemplo.com', 'Localidad: Monte Grande']);
     const res = await http().post('/api/v1/cv').attach('file', cv, { filename: 'mi cv.pdf', contentType: 'application/pdf' }).expect(201);
     const zone = await ds.getRepository(Zone).findOneByOrFail({ name: 'Monte Grande' });
     expect(res.body.cvId).toEqual(expect.any(String));
     expect(res.body.fileName).toBe('mi cv.pdf');
     expect(res.body.prefill).toEqual({
       fullName: 'Lucía Fernández',
+      firstName: 'Lucía',
+      lastName: 'Fernández',
       email: 'lucia@ejemplo.com',
       dni: '40.123.456',
+      cuil: '27-40123456-5',
       whatsapp: '11 4444-0101',
       zone: 'Monte Grande',
       zoneId: zone.id,
     });
     expect(res.body.validation.valid).toBe(true);
+    expect(Object.keys(res.body.validation.fields)).toEqual(expect.arrayContaining(['firstName', 'lastName', 'cuil']));
+    expect(res.body.validation.fields.cuil).toEqual({ valid: true, normalized: '27401234565', formatted: '27-40123456-5' });
     expect(res.body.validation.fields.dni.normalized).toBe('40123456');
     expect(res.body.validation.fields.whatsapp.normalized).toBe('+5491144440101');
     const doc = await ds.getRepository(CvDocument).findOneByOrFail({ id: res.body.cvId });
-    expect(doc.extracted).toEqual({ fullName: 'Lucía Fernández', email: 'lucia@ejemplo.com', dni: '40.123.456', whatsapp: '11 4444-0101', zone: 'Monte Grande' });
+    expect(doc.extracted).toEqual({
+      fullName: 'Lucía Fernández',
+      firstName: 'Lucía',
+      lastName: 'Fernández',
+      email: 'lucia@ejemplo.com',
+      dni: '40.123.456',
+      cuil: '27401234565',
+      whatsapp: '11 4444-0101',
+      zone: 'Monte Grande',
+    });
   });
 
   it('guarda el archivo con un nombre generado por el servidor y deja el registro', async () => {
@@ -108,7 +122,7 @@ describe('Leer los datos de CV reales (integración)', () => {
     const cv = cidFontPdf(['CURRICULUM VITAE', 'MARTÍN GÓMEZ', 'D.N.I. 5.123.456', 'WhatsApp: +54 9 351 555-0142', 'Vivo en Quilmes']);
     const res = await http().post('/api/v1/cv').attach('file', cv, { filename: 'cv.pdf' }).expect(201);
     expect(res.body.prefill).toEqual(
-      expect.objectContaining({ fullName: 'Martín Gómez', dni: '5.123.456', whatsapp: '351 555-0142', zone: 'Quilmes', zoneId: expect.any(String) }),
+      expect.objectContaining({ fullName: 'Martín Gómez', firstName: 'Martín', lastName: 'Gómez', dni: '5.123.456', whatsapp: '351 555-0142', zone: 'Quilmes', zoneId: expect.any(String) }),
     );
     expect(res.body.validation.valid).toBe(true);
   });
@@ -121,6 +135,8 @@ describe('Leer los datos de CV reales (integración)', () => {
     const zone = await ds.getRepository(Zone).findOneByOrFail({ name: 'Monte Grande' });
     expect(res.body.prefill).toEqual({
       fullName: 'Carla Domínguez',
+      firstName: 'Carla',
+      lastName: 'Domínguez',
       email: 'carla@ejemplo.com',
       dni: '41.222.333',
       whatsapp: '11 4444-0202',

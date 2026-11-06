@@ -26,9 +26,10 @@ pg-mem (Postgres en memoria para los tests) · Docker / Docker Compose · Swagge
 ## Qué hace
 
 **Postulante (API pública, `/api/v1`)**
-- Subir su CV (PDF, DOC o DOCX): se lee el texto del archivo y se precargan nombre y apellido, mail, DNI, WhatsApp y
-  zona. Sin dependencias externas; un PDF escaneado (solo imagen) deja el formulario vacío para completar a mano.
-- Completar el formulario a mano con validación campo por campo: nombre y apellido, mail, DNI, WhatsApp, zona y puesto.
+- Subir su CV (PDF, DOC o DOCX): se lee el texto del archivo y se precargan nombre y apellido (por separado), mail,
+  DNI, CUIL, WhatsApp y zona. Sin dependencias externas; un PDF escaneado (solo imagen) deja el formulario vacío.
+- Completar el formulario a mano con validación campo por campo: nombre, apellido, mail, DNI, CUIL (opcional, tiene
+  que coincidir con el DNI), WhatsApp, zona y puesto. Nombre y apellido se guardan por separado.
 - Buscar ofertas con texto libre y con los filtros del front (rubro, zona, cercanía).
 - Ver ofertas cerca de su ubicación (latitud, longitud y radio).
 - Aceptar o rechazar los permisos de voz, imagen y ubicación (queda registrado el consentimiento).

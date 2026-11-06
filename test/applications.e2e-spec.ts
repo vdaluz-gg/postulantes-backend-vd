@@ -46,6 +46,8 @@ describe('Postulaciones (integración)', () => {
       });
       const c = await ds.getRepository(Candidate).findOneByOrFail({ dni: '38412907' });
       expect(c).toEqual(expect.objectContaining({ email: 'martina@ejemplo.com', whatsapp: '+5491155550142', source: 'manual', zoneId }));
+      // Un cliente que todavía manda el nombre completo: se guarda también separado.
+      expect(c).toEqual(expect.objectContaining({ fullName: 'Martina Rodríguez', firstName: 'Martina', lastName: 'Rodríguez', cuil: null }));
       expect(JSON.stringify(res.body)).not.toContain(c.id);
     });
 

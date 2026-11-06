@@ -35,6 +35,8 @@ describe('parseCvText', () => {
     ].join('\n');
     expect(parseCvText(text, ZONES)).toEqual({
       fullName: 'Lucía Fernández',
+      firstName: 'Lucía',
+      lastName: 'Fernández',
       dni: '40.123.456',
       whatsapp: '11 4444-0101',
       email: 'lucia.fernandez@ejemplo.com',
@@ -57,14 +59,22 @@ describe('parseCvText', () => {
 
   describe('nombre y apellido', () => {
     it.each([
-      [['Nombre y apellido: Martín Gómez'], 'Martín Gómez'],
-      [['Nombre completo: Sofía Benítez Ríos'], 'Sofía Benítez Ríos'],
-      [['Apellido y nombre: PÉREZ, Juan Carlos'], 'Juan Carlos Pérez'],
-      [['Nombre: Martín', 'Apellido: Gómez'], 'Martín Gómez'],
-      [['Nombre: Martín    Apellido: Gómez'], 'Martín Gómez'],
-      [['Nombre y apellido:', 'Carla Domínguez'], 'Carla Domínguez'],
-    ])('con rótulo: %j', (lines, expected) => {
-      expect(parse(...lines).fullName).toBe(expected);
+      [['Nombre y apellido: Martín Gómez'], 'Martín Gómez', 'Martín', 'Gómez'],
+      [['Nombre completo: Sofía Benítez Ríos'], 'Sofía Benítez Ríos', 'Sofía Benítez', 'Ríos'],
+      [['Apellido y nombre: PÉREZ, Juan Carlos'], 'Juan Carlos Pérez', 'Juan Carlos', 'Pérez'],
+      [['Apellido y nombre: PÉREZ GÓMEZ, María José'], 'María José Pérez Gómez', 'María José', 'Pérez Gómez'],
+      [['Nombre: Martín', 'Apellido: Gómez'], 'Martín Gómez', 'Martín', 'Gómez'],
+      [['Nombres: María José', 'Apellidos: PÉREZ GÓMEZ'], 'María José Pérez Gómez', 'María José', 'Pérez Gómez'],
+      [['Nombre: Martín    Apellido: Gómez'], 'Martín Gómez', 'Martín', 'Gómez'],
+      [['Nombre y apellido:', 'Carla Domínguez'], 'Carla Domínguez', 'Carla', 'Domínguez'],
+    ])('con rótulo: %j', (lines, fullName, firstName, lastName) => {
+      expect(parse(...lines)).toEqual(expect.objectContaining({ fullName, firstName, lastName }));
+    });
+
+    it('sin rótulos de nombre y apellido, separa el nombre completo (dos palabras de nombre si hay tres o más)', () => {
+      expect(parse('LUCÍA FERNÁNDEZ')).toEqual({ fullName: 'Lucía Fernández', firstName: 'Lucía', lastName: 'Fernández' });
+      expect(parse('Juan Carlos Pérez')).toEqual({ fullName: 'Juan Carlos Pérez', firstName: 'Juan Carlos', lastName: 'Pérez' });
+      expect(parse('Juan Carlos Pérez Gómez')).toEqual(expect.objectContaining({ firstName: 'Juan Carlos', lastName: 'Pérez Gómez' }));
     });
 
     it('sin rótulo: el primer renglón que parece un nombre, salteando títulos, puestos y zonas', () => {
@@ -89,7 +99,44 @@ describe('parseCvText', () => {
       [['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'Lucía Fernández'], 'más allá de los primeros renglones'],
       [['Nombre y apellido: L4ura P3rez'], 'un rótulo con un valor inválido'],
     ])('lo omite: %j (%s)', (lines) => {
-      expect(parse(...lines).fullName).toBeUndefined();
+      const found = parse(...lines);
+      expect([found.fullName, found.firstName, found.lastName]).toEqual([undefined, undefined, undefined]);
+    });
+  });
+
+  describe('CUIL', () => {
+    it.each([
+      ['CUIL: 27-40123456-5', '27401234565'],
+      ['C.U.I.L.: 27-40123456-5', '27401234565'],
+      ['C.U.I.L. Nº 27 40123456 5', '27401234565'],
+      ['CUIL 27-40.123.456-5', '27401234565'],
+      ['CUIT: 20-40123456-0', '20401234560'],
+      ['Nacionalidad argentina · 27-40123456-5 · soltera', '27401234565'],
+    ])('%s → %s (solo dígitos)', (line, expected) => {
+      expect(parse(line).cuil).toBe(expected);
+    });
+
+    it('acepta el número en el renglón de abajo del rótulo', () => {
+      expect(parse('CUIL', '27-40123456-5').cuil).toBe('27401234565');
+    });
+
+    it('si no hay DNI, lo toma del CUIL', () => {
+      expect(parse('CUIL: 20-05123456-2')).toEqual({ cuil: '20051234562', dni: '5.123.456' });
+      expect(parse('27-40123456-5')).toEqual({ cuil: '27401234565', dni: '40.123.456' });
+    });
+
+    it('no reemplaza el DNI rotulado', () => {
+      expect(parse('DNI: 40.123.456', 'CUIL: 27-40123456-5')).toEqual({ dni: '40.123.456', cuil: '27401234565' });
+    });
+
+    it.each([
+      ['CUIL: 27-40123456-3', 'dígito verificador incorrecto'],
+      ['27-40123456-3', 'sin rótulo y con verificador incorrecto'],
+      ['CUIT: 30-40123456-6', 'CUIT de empresa'],
+      ['30-40123456-6', 'CUIT de empresa sin rótulo'],
+      ['Tel: 11-4444-0101', 'un teléfono'],
+    ])('lo omite: %s (%s)', (line) => {
+      expect(parse(line).cuil).toBeUndefined();
     });
   });
 
@@ -184,9 +231,14 @@ describe('parseCvText', () => {
     });
 
     it('un apellido o nombre que coincide con una zona no es la zona', () => {
-      expect(parse('Lucía Moreno', 'lucia.moreno@ejemplo.com')).toEqual({ fullName: 'Lucía Moreno', email: 'lucia.moreno@ejemplo.com' });
+      expect(parse('Lucía Moreno', 'lucia.moreno@ejemplo.com')).toEqual({
+        fullName: 'Lucía Moreno',
+        firstName: 'Lucía',
+        lastName: 'Moreno',
+        email: 'lucia.moreno@ejemplo.com',
+      });
       expect(parse('Pilar Gómez', 'Atención al cliente').zone).toBeUndefined();
-      expect(parse('Nombre: Rosario', 'Apellido: Paz')).toEqual({ fullName: 'Rosario Paz' });
+      expect(parse('Nombre: Rosario', 'Apellido: Paz')).toEqual({ fullName: 'Rosario Paz', firstName: 'Rosario', lastName: 'Paz' });
     });
 
     it('sin rótulo exige mayúscula inicial ("salta" no es Salta)', () => {

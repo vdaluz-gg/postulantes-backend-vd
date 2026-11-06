@@ -14,12 +14,25 @@ const fail = (code: ValidationCode): ValidationOutcome => ({ valid: false, code 
 const digitsOf = (value: unknown): string => String(value ?? '').replace(/\D/g, '');
 const text = (value: unknown): string => String(value ?? '').trim();
 
+const NAME_CHARS = /^[\p{L}][\p{L}' -]*$/u;
+
+/** Largo máximo del nombre y del apellido, cada uno por separado. */
+export const NAME_PART_MAX_LENGTH = 80;
+
 /** Nombre y apellido: al menos dos palabras; solo letras, espacios, apóstrofos y guiones. */
 export function validateFullName(value: unknown): ValidationOutcome {
   const v = text(value);
   if (!v) return fail('required');
-  if (!/^[\p{L}][\p{L}' -]*$/u.test(v)) return fail('invalidChars');
+  if (!NAME_CHARS.test(v)) return fail('invalidChars');
   return v.split(/\s+/).length < 2 ? fail('missingLastName') : OK;
+}
+
+/** Nombre o apellido por separado: solo letras, espacios, apóstrofos y guiones; hasta 80 caracteres. */
+export function validateName(value: unknown): ValidationOutcome {
+  const v = text(value);
+  if (!v) return fail('required');
+  if (!NAME_CHARS.test(v)) return fail('invalidChars');
+  return v.length > NAME_PART_MAX_LENGTH ? fail('invalid') : OK;
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -70,3 +83,37 @@ export function normalizeWhatsapp(value: unknown): string {
   const local = localMobile(value);
   return local ? `+549${local}` : '';
 }
+
+/** Prefijos de CUIL de personas (20, 23, 24, 27). Los de empresas (30, 33, 34) no son un CUIL personal. */
+const CUIL_PERSON_PREFIXES = new Set(['20', '23', '24', '27']);
+const CUIL_WEIGHTS = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
+
+/** Dígito verificador (módulo 11) de los 10 primeros dígitos; null si daría 10, que no es válido. */
+function cuilCheckDigit(first10: string): number | null {
+  const sum = CUIL_WEIGHTS.reduce((acc, w, i) => acc + w * Number(first10[i]), 0);
+  const check = 11 - (sum % 11);
+  if (check === 11) return 0;
+  return check === 10 ? null : check;
+}
+
+/** CUIL de una persona: 11 dígitos (con o sin guiones o espacios), prefijo 20/23/24/27 y verificador correcto. */
+export function validateCuil(value: unknown): ValidationOutcome {
+  const v = text(value);
+  if (!v) return fail('required');
+  if (!/^[\d\s-]+$/.test(v)) return fail('invalid');
+  const d = digitsOf(v);
+  if (d.length !== 11 || !CUIL_PERSON_PREFIXES.has(d.slice(0, 2))) return fail('invalid');
+  return cuilCheckDigit(d.slice(0, 10)) === Number(d[10]) ? OK : fail('invalid');
+}
+
+/** Deja solo los dígitos: 27-40123456-5 → 27401234565. */
+export const normalizeCuil = (value: unknown): string => digitsOf(value);
+
+/** Con guiones: 27401234565 → 27-40123456-5. Devuelve '' si no tiene 11 dígitos. */
+export function formatCuil(value: unknown): string {
+  const d = digitsOf(value);
+  return d.length === 11 ? `${d.slice(0, 2)}-${d.slice(2, 10)}-${d.slice(10)}` : '';
+}
+
+/** Los 8 dígitos del medio del CUIL son el DNI (con ceros a la izquierda si tiene 7 dígitos). */
+export const cuilMatchesDni = (cuil: unknown, dni: unknown): boolean => digitsOf(cuil).slice(2, 10) === digitsOf(dni).padStart(8, '0');

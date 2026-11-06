@@ -111,7 +111,7 @@ export interface InterviewDto {
 }
 
 export interface InterviewAgendaItemDto extends InterviewDto {
-  candidate: { id: string; fullName: string };
+  candidate: { id: string; fullName: string; firstName: string | null; lastName: string | null };
   position: string;
 }
 

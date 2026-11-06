@@ -2,6 +2,7 @@ import { BadGatewayException, BadRequestException, Inject, Injectable, Logger, U
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'crypto';
 import { Repository } from 'typeorm';
+import { formatCuil } from '../../common/validators/ar-validators';
 import { CandidateValidationService } from '../candidates/candidate-validation.service';
 import { ValidateCandidateResponse } from '../candidates/dto/validate-candidate.dto';
 import { Zone } from '../zones/entities/zone.entity';
@@ -49,9 +50,11 @@ export class CvService {
 
       const zone = extracted.zone ? await this.findZoneByName(extracted.zone) : null;
       const prefill: Record<string, string> = {};
-      for (const key of ['fullName', 'email', 'dni', 'whatsapp', 'position'] as const) {
+      for (const key of ['fullName', 'firstName', 'lastName', 'email', 'dni', 'whatsapp', 'position'] as const) {
         if (extracted[key]) prefill[key] = extracted[key] as string;
       }
+      // En el formulario el CUIL se muestra con guiones; en `extracted` queda solo con dígitos.
+      if (extracted.cuil) prefill.cuil = formatCuil(extracted.cuil) || extracted.cuil;
       if (extracted.zone) prefill.zone = extracted.zone;
       if (zone) prefill.zoneId = zone.id;
 

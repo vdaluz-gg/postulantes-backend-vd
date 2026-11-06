@@ -1,10 +1,13 @@
 import { Type } from 'class-transformer';
-import { IsBoolean, IsNumber, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 import {
+  IsCuil,
   IsDni,
   IsEmailAr,
   IsFullName,
+  IsPersonName,
   IsWhatsappAr,
+  NormalizeCuil,
   NormalizeDni,
   NormalizeEmail,
   NormalizeWhatsapp,
@@ -13,13 +16,28 @@ import {
 
 /**
  * Datos de contacto del postulante, con las mismas reglas que el formulario del front. Los comparten el alta
- * del backoffice y la postulación pública.
+ * del backoffice y la postulación pública. El nombre llega como nombre y apellido por separado o, en clientes
+ * anteriores, como nombre completo (que entonces es obligatorio).
  */
 export class CandidateContactDto {
+  @IsOptional()
+  @TrimString()
+  @IsPersonName()
+  @MaxLength(80)
+  firstName?: string;
+
+  @IsOptional()
+  @TrimString()
+  @IsPersonName()
+  @MaxLength(80)
+  lastName?: string;
+
+  /** Obligatorio solo si no llegan nombre y apellido por separado; si llegan, ganan ellos. */
+  @ValidateIf((o: CandidateContactDto) => !(o.firstName && o.lastName))
   @TrimString()
   @IsFullName()
   @MaxLength(160)
-  fullName: string;
+  fullName?: string;
 
   @NormalizeEmail()
   @IsEmailAr()
@@ -32,6 +50,12 @@ export class CandidateContactDto {
   @NormalizeWhatsapp()
   @IsWhatsappAr()
   whatsapp: string;
+
+  /** CUIL (opcional): se guarda solo con dígitos y tiene que coincidir con el DNI. */
+  @IsOptional()
+  @NormalizeCuil()
+  @IsCuil()
+  cuil?: string | null;
 
   @IsOptional()
   @IsUUID()

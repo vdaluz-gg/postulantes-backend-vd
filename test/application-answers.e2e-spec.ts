@@ -33,6 +33,8 @@ describe('Postulación con campos agregados desde el backoffice (integración)',
     beforeAll(async () => {
       const fields = [
         ...coreApplicationFields(),
+        // Configuración guardada antes de separar nombre y apellido: el campo viejo no es una respuesta.
+        field('fullName', 'Nombre y apellido', 'text', { required: true }),
         field('middleName', 'Segundo nombre', 'text', { required: true }),
         field('shift', 'Turno', 'select', { options: [{ value: 'manana', label: 'Mañana' }, { value: 'tarde', label: 'Tarde' }] }),
       ];
@@ -66,6 +68,26 @@ describe('Postulación con campos agregados desde el backoffice (integración)',
       ]);
       const detail = await http().get(`/api/v1/backoffice/applications/${saved.id}`).set(bearer(token)).expect(200);
       expect(detail.body.answers).toEqual(saved.answers);
+    });
+
+    it('nombre, apellido y CUIL viajan como datos del postulante, no como respuestas', async () => {
+      const res = await http()
+        .post('/api/v1/applications')
+        .send({
+          firstName: 'Tomás',
+          lastName: 'Acosta',
+          email: 'tomas@ejemplo.com',
+          dni: '40.123.458',
+          whatsapp: '11 4444-0102',
+          cuil: '20-40123458-7',
+          answers: { middleName: 'Ezequiel', cuil: 'x', firstName: 'x' },
+        })
+        .expect(201);
+      const saved = await ds.getRepository(Application).findOneByOrFail({ trackingCode: res.body.trackingCode });
+      expect(saved.answers).toEqual([{ id: 'middleName', label: 'Segundo nombre', value: 'Ezequiel' }]);
+      expect(await ds.getRepository(Candidate).findOneByOrFail({ dni: '40123458' })).toEqual(
+        expect.objectContaining({ firstName: 'Tomás', lastName: 'Acosta', fullName: 'Tomás Acosta', cuil: '20401234587' }),
+      );
     });
 
     it.each([

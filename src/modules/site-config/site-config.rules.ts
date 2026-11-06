@@ -13,10 +13,13 @@ export type FieldType = (typeof FIELD_TYPES)[number];
 export const APPLICATION_SECTION = 'application';
 
 /** Datos sin los que no se puede registrar una postulación: no se pueden ocultar, borrar ni volver opcionales. */
-export const CORE_APPLICATION_FIELDS = ['fullName', 'email', 'dni', 'whatsapp'] as const;
+export const CORE_APPLICATION_FIELDS = ['firstName', 'lastName', 'email', 'dni', 'whatsapp'] as const;
 
-/** Campos propios del formulario: viajan como datos del postulante, no como respuestas extra. */
-export const BUILT_IN_APPLICATION_FIELDS: readonly string[] = [...CORE_APPLICATION_FIELDS, 'zone', 'position'];
+/**
+ * Campos propios del formulario: viajan como datos del postulante, no como respuestas extra. Incluye
+ * `fullName` para que una configuración guardada antes de separar nombre y apellido no lo vuelva una respuesta.
+ */
+export const BUILT_IN_APPLICATION_FIELDS: readonly string[] = [...CORE_APPLICATION_FIELDS, 'zone', 'position', 'cuil', 'fullName'];
 
 export interface FieldOption {
   value: string;

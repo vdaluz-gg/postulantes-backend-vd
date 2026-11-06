@@ -29,6 +29,22 @@ describe('findConfigProblem', () => {
     expect(findConfigProblem(siteConfig(missing).audiences)).toBe('Falta el campo «email» en la postulación: el sistema lo necesita.');
   });
 
+  it('el nombre y el apellido van por separado y los dos son obligatorios', () => {
+    const noLastName = coreApplicationFields().filter((f) => f.id !== 'lastName');
+    expect(findConfigProblem(siteConfig(noLastName).audiences)).toBe('Falta el campo «lastName» en la postulación: el sistema lo necesita.');
+    const optionalFirstName = coreApplicationFields().map((f) => (f.id === 'firstName' ? { ...f, required: false } : f));
+    expect(findConfigProblem(siteConfig(optionalFirstName).audiences)).toBe(
+      '«Nombre» lo necesita el sistema para registrar la postulación: dejalo visible y obligatorio.',
+    );
+  });
+
+  it('el CUIL es opcional y una configuración guardada con el nombre completo sigue siendo válida', () => {
+    const withoutCuil = coreApplicationFields().filter((f) => f.id !== 'cuil');
+    expect(findConfigProblem(siteConfig(withoutCuil).audiences)).toBeNull();
+    const legacy = [...coreApplicationFields(), field('fullName', 'Nombre y apellido', 'text', { required: true })];
+    expect(findConfigProblem(siteConfig(legacy).audiences)).toBeNull();
+  });
+
   it('rechaza lo que no es un objeto', () => {
     expect(findConfigProblem(null)).toBe('La configuración está incompleta: falta «postulantes».');
     expect(findConfigProblem({ ...siteConfig().audiences, clientes: { sections: 'x' } })).toBe('La configuración de «clientes» no es válida.');
@@ -85,6 +101,11 @@ describe('checkAnswers', () => {
     ['un objeto en lugar de texto', { middleName: { a: 1 } }, 'Revisá «Segundo nombre».'],
   ])('rechaza: %s', (_name, answers, error) => {
     expect(checkAnswers(fields, answers)).toEqual({ error });
+  });
+
+  it('los datos propios del formulario (CUIL y el nombre completo de configuraciones anteriores) no son respuestas', () => {
+    const legacy = [...coreApplicationFields(), field('fullName', 'Nombre y apellido', 'text', { required: true })];
+    expect(checkAnswers(legacy, { cuil: '27-40123456-5', firstName: 'Lucía', lastName: 'Fernández' })).toEqual({ answers: [] });
   });
 
   it('un sí/no obligatorio tiene que estar marcado', () => {

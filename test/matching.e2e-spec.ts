@@ -73,7 +73,7 @@ describe('Matching: postulantes sugeridos para una oferta (integración)', () =>
       const ids = res.body.items.map((i: { candidate: { id: string } }) => i.candidate.id);
       expect(ids).toEqual([best, far, partial]);
       expect(res.body.items[0]).toEqual({
-        candidate: { id: best, fullName: 'Persona Prueba', zone: 'Monte Grande', position: 'Operario de producción', identityStatus: 'verified' },
+        candidate: { id: best, fullName: 'Persona Prueba', firstName: 'Persona', lastName: 'Prueba', zone: 'Monte Grande', position: 'Operario de producción', identityStatus: 'verified' },
         score: 100,
         reasons: ['zone', 'position', 'identity', 'cv'],
         alreadyApplied: false,

@@ -28,12 +28,14 @@ export const field = (id: string, label: string, type: FieldType = 'text', extra
 });
 
 export const coreApplicationFields = (): Field[] => [
-  field('fullName', 'Nombre y apellido', 'text', { required: true, placeholder: 'Como figura en tu DNI' }),
+  field('firstName', 'Nombre', 'text', { required: true, placeholder: 'Como figura en tu DNI' }),
+  field('lastName', 'Apellido', 'text', { required: true, placeholder: 'Como figura en tu DNI' }),
   field('dni', 'DNI', 'text', { required: true }),
   field('email', 'Email', 'email', { required: true }),
   field('whatsapp', 'WhatsApp', 'tel', { required: true }),
   field('zone', 'Zona donde vivís', 'text', { required: true }),
   field('position', 'Puesto', 'text', { readonly: true, tone: 'section' }),
+  field('cuil', 'CUIL', 'text', { placeholder: 'XX-XXXXXXXX-X' }),
 ];
 
 const audience = (name: string, sections: unknown[] = []) => ({ audience: name, sections, documents: [], alerts: [], channels: [], copy: [] });

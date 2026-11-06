@@ -1,7 +1,9 @@
 import { PartialType } from '@nestjs/swagger';
 import { IsIn, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
+import { formatCuil } from '../../../common/validators/ar-validators';
 import { TrimString } from '../../../common/validators/ar-validators.decorators';
+import { splitFullName } from '../candidate-names';
 import {
   Candidate,
   CANDIDATE_CHANNELS,
@@ -50,8 +52,12 @@ export class ListCandidatesQueryDto extends PaginationQueryDto {
 export interface CandidateDto {
   id: string;
   fullName: string;
+  firstName: string | null;
+  lastName: string | null;
   email: string;
   dni: string;
+  /** Con guiones: 27-40123456-5. */
+  cuil: string | null;
   whatsapp: string;
   zone: { id: string; name: string } | null;
   position: string | null;
@@ -81,9 +87,21 @@ export interface CandidateDetailDto extends CandidateDto {
   consents: { type: string; granted: boolean; at: Date }[];
 }
 
+/** Nombre y apellido guardados; en fichas anteriores a separarlos, los del nombre completo. */
+export function candidateNameParts(c: Pick<Candidate, 'fullName' | 'firstName' | 'lastName'>): { firstName: string | null; lastName: string | null } {
+  return c.firstName || c.lastName ? { firstName: c.firstName, lastName: c.lastName } : splitFullName(c.fullName);
+}
+
+/** Datos de identificación del postulante para las vistas del backoffice. */
+export const candidateIdentity = (c: Candidate) => ({
+  fullName: c.fullName,
+  ...candidateNameParts(c),
+  cuil: c.cuil ? formatCuil(c.cuil) : null,
+});
+
 export const toCandidateDto = (c: Candidate): CandidateDto => ({
   id: c.id,
-  fullName: c.fullName,
+  ...candidateIdentity(c),
   email: c.email,
   dni: c.dni,
   whatsapp: c.whatsapp,

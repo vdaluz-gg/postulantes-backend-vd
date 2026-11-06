@@ -4,8 +4,13 @@ import { BaseEntity } from '../../../common/base.entity';
 /** Datos que la IA pudo extraer del CV. */
 export interface CvExtractedData {
   fullName?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
+  /** Con puntos: 40.123.456. */
   dni?: string;
+  /** Solo dígitos: 27401234565. */
+  cuil?: string;
   whatsapp?: string;
   zone?: string;
   position?: string;

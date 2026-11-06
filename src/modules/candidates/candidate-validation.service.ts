@@ -2,12 +2,17 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
+  cuilMatchesDni,
+  formatCuil,
   formatDni,
+  normalizeCuil,
   normalizeDni,
   normalizeWhatsapp,
+  validateCuil,
   validateDni,
   validateEmail,
   validateFullName,
+  validateName,
   validateWhatsapp,
   ValidationOutcome,
 } from '../../common/validators/ar-validators';
@@ -32,11 +37,20 @@ export class CandidateValidationService {
     const fields: Record<string, FieldValidationResult> = {};
 
     if (dto.fullName !== undefined) fields.fullName = this.result('fullName', validateFullName(dto.fullName));
+    if (dto.firstName !== undefined) fields.firstName = this.result('firstName', validateName(dto.firstName));
+    if (dto.lastName !== undefined) fields.lastName = this.result('lastName', validateName(dto.lastName));
     if (dto.email !== undefined) {
       fields.email = this.result('email', validateEmail(dto.email), { normalized: dto.email.trim().toLowerCase() });
     }
     if (dto.dni !== undefined) {
       fields.dni = this.result('dni', validateDni(dto.dni), { normalized: normalizeDni(dto.dni), formatted: formatDni(dto.dni) });
+    }
+    if (dto.cuil !== undefined) {
+      fields.cuil = this.result('cuil', validateCuil(dto.cuil), { normalized: normalizeCuil(dto.cuil), formatted: formatCuil(dto.cuil) });
+      // Con los dos datos bien escritos, el CUIL tiene que contener el DNI.
+      if (fields.cuil.valid && fields.dni?.valid && !cuilMatchesDni(dto.cuil, dto.dni)) {
+        fields.cuil = { valid: false, code: 'dniMismatch', message: messageFor('cuil', 'dniMismatch') };
+      }
     }
     if (dto.whatsapp !== undefined) {
       fields.whatsapp = this.result('whatsapp', validateWhatsapp(dto.whatsapp), { normalized: normalizeWhatsapp(dto.whatsapp) });

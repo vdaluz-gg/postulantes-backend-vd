@@ -43,7 +43,7 @@ describe('Configuración de los portales (integración)', () => {
       .expect(200);
     expect(res.body).toEqual(expect.objectContaining({ version: 2, status: 'draft', updatedBy: 'Tester Admin' }));
     expect(Date.parse(res.body.updatedAt)).toBeGreaterThan(Date.parse('2026-01-01'));
-    expect(res.body.audiences.postulantes.sections[0].fields).toHaveLength(7);
+    expect(res.body.audiences.postulantes.sections[0].fields).toHaveLength(9);
 
     expect((await http().get(base).set(bearer(token)).expect(200)).body.version).toBe(2);
     await http().get('/api/v1/site-config/postulantes').expect(404);

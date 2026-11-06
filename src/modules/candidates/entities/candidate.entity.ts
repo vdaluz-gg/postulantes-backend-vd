@@ -26,8 +26,16 @@ export type IdentityStatus = (typeof IDENTITY_STATUSES)[number];
 
 @Entity('candidates')
 export class Candidate extends BaseEntity {
+  /** Siempre "nombre apellido" cuando se conocen los dos (lo usan resúmenes, el alta en el ERP y los reportes). */
   @Column({ type: 'varchar', length: 160 })
   fullName: string;
+
+  /** Nombre por separado. Null en fichas anteriores a separar nombre y apellido. */
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  firstName: string | null;
+
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  lastName: string | null;
 
   @Index()
   @Column({ type: 'varchar', length: 254 })
@@ -37,6 +45,10 @@ export class Candidate extends BaseEntity {
   @Index({ unique: true })
   @Column({ type: 'varchar', length: 8 })
   dni: string;
+
+  /** CUIL de la persona, solo dígitos (27401234565). Opcional. */
+  @Column({ type: 'varchar', length: 11, nullable: true })
+  cuil: string | null;
 
   /** Formato internacional: +5491155550142. */
   @Column({ type: 'varchar', length: 16 })

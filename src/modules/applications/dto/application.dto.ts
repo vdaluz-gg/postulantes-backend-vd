@@ -2,6 +2,7 @@ import { IsIn, IsObject, IsOptional, IsString, IsUUID, Matches, MaxLength } from
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import { TrimString } from '../../../common/validators/ar-validators.decorators';
 import { CandidateContactDto } from '../../candidates/dto/candidate-contact.dto';
+import { candidateIdentity } from '../../candidates/dto/candidate.dto';
 import type { ApplicationAnswer } from '../../site-config/site-config.rules';
 import { PUBLIC_CANDIDATE_CHANNELS } from '../../candidates/entities/candidate.entity';
 import { SESSION_ID_PATTERN } from '../../consents/dto/consent.dto';
@@ -88,7 +89,7 @@ export interface OnboardingDto {
 export interface ApplicationSummaryDto {
   id: string;
   trackingCode: string;
-  candidate: { id: string; fullName: string; dni: string };
+  candidate: { id: string; fullName: string; firstName: string | null; lastName: string | null; dni: string; cuil: string | null };
   position: string;
   jobOfferCode: string | null;
   status: ApplicationStatus;
@@ -117,7 +118,7 @@ export const offerRef = (a: Application): { ref: string; title: string } | null 
 export const toSummary = (a: Application): ApplicationSummaryDto => ({
   id: a.id,
   trackingCode: a.trackingCode,
-  candidate: { id: a.candidate.id, fullName: a.candidate.fullName, dni: a.candidate.dni },
+  candidate: { id: a.candidate.id, ...candidateIdentity(a.candidate), dni: a.candidate.dni },
   position: a.position,
   jobOfferCode: a.jobOffer?.code ?? null,
   status: a.status,

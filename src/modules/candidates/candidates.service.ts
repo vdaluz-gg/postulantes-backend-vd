@@ -4,6 +4,8 @@ import { DataSource, In, Repository } from 'typeorm';
 import { Page } from '../../common/pagination';
 import { isUniqueViolation } from '../../common/utils/db-errors';
 import { escapeLike } from '../../common/utils/like';
+import { cuilMatchesDni } from '../../common/validators/ar-validators';
+import { messageFor } from '../../common/validators/messages';
 import { Interview } from '../interviews/entities/interview.entity';
 import { Application } from '../applications/entities/application.entity';
 import { Consent } from '../consents/entities/consent.entity';
@@ -11,6 +13,7 @@ import { CvDocument } from '../cv/entities/cv-document.entity';
 import { IdentityVerification } from '../identity/entities/identity-verification.entity';
 import { FILE_STORAGE, FileStorage } from '../cv/ports/file-storage';
 import { Zone } from '../zones/entities/zone.entity';
+import { CandidateNames, resolveCandidateNames } from './candidate-names';
 import { CandidateContactDto } from './dto/candidate-contact.dto';
 import {
   CandidateDetailDto,
@@ -21,6 +24,8 @@ import {
   toCandidateDto,
 } from './dto/candidate.dto';
 import { Candidate, CandidateChannel, CandidateSource } from './entities/candidate.entity';
+
+const FULL_NAME_MAX_LENGTH = 160;
 
 @Injectable()
 export class CandidatesService {
@@ -43,6 +48,18 @@ export class CandidatesService {
     if (hasLat !== hasLng) throw new BadRequestException('latitude y longitude se envían juntas');
   }
 
+  /** Los 8 dígitos del medio del CUIL tienen que ser el DNI. */
+  private assertCuilMatchesDni(cuil: string | null | undefined, dni: string): void {
+    if (cuil && !cuilMatchesDni(cuil, dni)) throw new BadRequestException(messageFor('cuil', 'dniMismatch'));
+  }
+
+  /** El nombre completo tiene lugar para 160 caracteres; nombre y apellido (80 cada uno) juntos podrían pasarse. */
+  private assertFullNameLength(names: CandidateNames | null): void {
+    if (names && names.fullName.length > FULL_NAME_MAX_LENGTH) {
+      throw new BadRequestException(`El nombre y el apellido juntos pueden tener hasta ${FULL_NAME_MAX_LENGTH} caracteres.`);
+    }
+  }
+
   private async assertZone(zoneId: string | null | undefined): Promise<void> {
     if (zoneId && !(await this.zones.existsBy({ id: zoneId, active: true }))) throw new BadRequestException('La zona no existe');
   }
@@ -55,14 +72,20 @@ export class CandidatesService {
 
   async create(dto: CreateCandidateDto, source: CandidateSource = 'backoffice', channel: CandidateChannel = 'backoffice'): Promise<CandidateDto> {
     this.assertCoordinates(dto);
+    this.assertCuilMatchesDni(dto.cuil, dto.dni);
+    // El DTO garantiza nombre y apellido o un nombre completo válido.
+    const names = resolveCandidateNames(dto);
+    if (!names) throw new BadRequestException(messageFor('fullName', 'required'));
+    this.assertFullNameLength(names);
     await this.assertZone(dto.zoneId);
     if (await this.candidates.existsBy({ dni: dto.dni })) throw new ConflictException('Ya existe un postulante con ese DNI');
     try {
       const saved = await this.candidates.save(
         this.candidates.create({
-          fullName: dto.fullName,
+          ...names,
           email: dto.email,
           dni: dto.dni,
+          cuil: dto.cuil || null,
           whatsapp: dto.whatsapp,
           zoneId: dto.zoneId ?? null,
           position: dto.position || null,
@@ -138,15 +161,19 @@ export class CandidatesService {
       latitude: dto.latitude === undefined ? candidate.latitude : dto.latitude,
       longitude: dto.longitude === undefined ? candidate.longitude : dto.longitude,
     });
+    this.assertCuilMatchesDni(dto.cuil === undefined ? candidate.cuil : dto.cuil, dto.dni ?? candidate.dni);
     if (dto.zoneId !== undefined) await this.assertZone(dto.zoneId);
     if (dto.dni !== undefined && dto.dni !== candidate.dni && (await this.candidates.existsBy({ dni: dto.dni }))) {
       throw new ConflictException('Ya existe un postulante con ese DNI');
     }
 
     // Los campos obligatorios no aceptan null; los opcionales sí (null los borra).
-    if (dto.fullName != null) candidate.fullName = dto.fullName;
+    const names = resolveCandidateNames(dto, candidate);
+    this.assertFullNameLength(names);
+    if (names) Object.assign(candidate, names);
     if (dto.email != null) candidate.email = dto.email;
     if (dto.dni != null) candidate.dni = dto.dni;
+    if (dto.cuil !== undefined) candidate.cuil = dto.cuil || null;
     if (dto.whatsapp != null) candidate.whatsapp = dto.whatsapp;
     if (dto.whatsappOptIn != null) candidate.whatsappOptIn = dto.whatsappOptIn;
     if (dto.zoneId !== undefined) {

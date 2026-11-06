@@ -1,9 +1,10 @@
-import { formatDni, validateDni, validateEmail, validateFullName } from '../../common/validators/ar-validators';
+import { formatDni, normalizeCuil, validateCuil, validateDni, validateEmail, validateFullName } from '../../common/validators/ar-validators';
+import { splitFullName } from '../candidates/candidate-names';
 import { CvExtractedData } from './entities/cv-document.entity';
 
 /**
- * Busca los datos del postulante en el texto de su CV con reglas simples (sin IA): mail, DNI, celular, nombre y
- * apellido y zona. Si un dato no aparece con claridad se omite: nunca se inventa. Lo que devuelve pasa después
+ * Busca los datos del postulante en el texto de su CV con reglas simples (sin IA): mail, DNI, CUIL, celular,
+ * nombre y apellido (juntos y por separado) y zona. Si un dato no aparece con claridad se omite: nunca se inventa. Lo que devuelve pasa después
  * por las mismas validaciones del formulario.
  */
 
@@ -75,6 +76,32 @@ function findDni(lines: string[]): string | undefined {
   for (const line of lines) {
     const found = accept(CUIL.exec(line)?.[1]);
     if (found) return found;
+  }
+  return undefined;
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// CUIL
+// ---------------------------------------------------------------------------------------------------------------
+
+const CUIL_LABELLED = /(?<!\p{L})c\.?\s?u\.?\s?i\.?\s?[lt]\.?(?!\p{L})[^\d\n]{0,15}?(?<!\d)(\d{2}[-\s.]?\d{1,2}\.?\d{3}\.?\d{3}[-\s.]?\d)(?!\d)/iu;
+const CUIL_UNLABELLED = /(?<![\d-])\d{2}-\d{8}-\d(?![\d-])/g;
+
+/** CUIL de una persona (prefijo 20/23/24/27 y verificador correcto), solo con dígitos. Primero el rotulado. */
+function findCuil(lines: string[]): string | undefined {
+  const accept = (raw: string | undefined): string | undefined => {
+    const digits = normalizeCuil(raw);
+    return raw && validateCuil(digits).valid ? digits : undefined;
+  };
+  for (let i = 0; i < lines.length; i++) {
+    const found = accept(CUIL_LABELLED.exec(withNext(lines, i, /\d/.test(lines[i])))?.[1]);
+    if (found) return found;
+  }
+  for (const line of lines) {
+    for (const m of line.matchAll(CUIL_UNLABELLED)) {
+      const found = accept(m[0]);
+      if (found) return found;
+    }
   }
   return undefined;
 }
@@ -171,6 +198,13 @@ function fixCase(name: string): string {
     .join(' ');
 }
 
+interface FoundName {
+  name: string;
+  /** Nombre y apellido rotulados por separado (o "Apellido, Nombre"); si no, se separa el nombre completo. */
+  firstName?: string;
+  lastName?: string;
+}
+
 function cleanName(raw: string): string | undefined {
   const name = fixCase(
     raw
@@ -186,16 +220,27 @@ const FULL_NAME_LABEL = /^(?:(nombres?\s+y\s+apellidos?|nombre\s+completo)|(apel
 const FIRST_NAME_LABEL = /(?<!\p{L})nombres?\s*:\s*([\p{L}'’ -]+?)\s*(?=apellidos?\s*:|[|,;]|$)/iu;
 const LAST_NAME_LABEL = /(?<!\p{L})apellidos?\s*:\s*([\p{L}'’ -]+?)\s*(?=nombres?\s*:|[|,;]|$)/iu;
 
-function labelledName(lines: string[]): string | undefined {
+/** Nombre completo limpio a partir del nombre y el apellido, y las dos partes ya corregidas. */
+function cleanParts(first: string, last: string): FoundName | undefined {
+  const firstWords = first.trim().split(/\s+/).length;
+  const name = cleanName(`${first.trim()} ${last.trim()}`);
+  if (!name) return undefined;
+  const words = name.split(' ');
+  if (words.length <= firstWords) return { name };
+  return { name, firstName: words.slice(0, firstWords).join(' '), lastName: words.slice(firstWords).join(' ') };
+}
+
+function labelledName(lines: string[]): FoundName | undefined {
   for (let i = 0; i < lines.length; i++) {
     const m = FULL_NAME_LABEL.exec(lines[i]);
     if (!m) continue;
-    let value = m[3] || lines[i + 1] || '';
+    const value = m[3] || lines[i + 1] || '';
     // "Apellido y nombre: Fernández, Lucía" → "Lucía Fernández"
     const comma = /^([^,]+),\s*([^,]+)$/.exec(value);
-    if (comma) value = m[2] ? `${comma[2]} ${comma[1]}` : `${comma[1]} ${comma[2]}`;
-    const name = cleanName(value);
-    if (name) return name;
+    const found = comma ? (m[2] ? cleanParts(comma[2], comma[1]) : cleanParts(comma[1], comma[2])) : undefined;
+    if (found) return found;
+    const name = comma ? undefined : cleanName(value);
+    if (name) return { name };
   }
   let first: string | undefined;
   let last: string | undefined;
@@ -204,7 +249,7 @@ function labelledName(lines: string[]): string | undefined {
     first ??= FIRST_NAME_LABEL.exec(/nombres?\s*:\s*$/i.test(line) ? `${line} ${lines[i + 1] ?? ''}` : line)?.[1];
     last ??= LAST_NAME_LABEL.exec(/apellidos?\s*:\s*$/i.test(line) ? `${line} ${lines[i + 1] ?? ''}` : line)?.[1];
   }
-  return first && last ? cleanName(`${first.trim()} ${last.trim()}`) : undefined;
+  return first && last ? cleanParts(first, last) : undefined;
 }
 
 function looksLikeName(line: string, zoneAliases: Set<string>): string | undefined {
@@ -221,12 +266,12 @@ function looksLikeName(line: string, zoneAliases: Set<string>): string | undefin
   return cleanName(candidate);
 }
 
-function findFullName(lines: string[], zoneAliases: Set<string>): { name?: string; line: number } {
+function findFullName(lines: string[], zoneAliases: Set<string>): { found?: FoundName; line: number } {
   const labelled = labelledName(lines);
-  if (labelled) return { name: labelled, line: -1 };
+  if (labelled) return { found: labelled, line: -1 };
   for (let i = 0; i < Math.min(lines.length, NAME_SCAN_LINES); i++) {
     const name = looksLikeName(lines[i], zoneAliases);
-    if (name) return { name, line: i };
+    if (name) return { found: { name }, line: i };
   }
   return { line: -1 };
 }
@@ -325,14 +370,25 @@ export function parseCvText(text: string, zoneNames: readonly string[]): CvExtra
   if (!lines.length) return {};
   const matchers = zoneMatchers(zoneNames);
   const allAliases = new Set(matchers.flatMap((m) => m.aliases));
-  const { name, line: nameLine } = findFullName(lines, allAliases);
+  const { found, line: nameLine } = findFullName(lines, allAliases);
+  const name = found?.name;
 
   const result: CvExtractedData = {};
-  if (name) result.fullName = name;
+  if (found) {
+    result.fullName = found.name;
+    const parts = found.firstName && found.lastName ? found : splitFullName(found.name);
+    if (parts.firstName && parts.lastName) {
+      result.firstName = parts.firstName;
+      result.lastName = parts.lastName;
+    }
+  }
   const email = findEmail(lines);
   if (email) result.email = email;
-  const dni = findDni(lines);
+  const cuil = findCuil(lines);
+  // Sin DNI escrito, sale del CUIL (sus 8 dígitos del medio).
+  const dni = findDni(lines) ?? (cuil ? formatDni(cuil.slice(2, 10)) : undefined);
   if (dni) result.dni = dni;
+  if (cuil) result.cuil = cuil;
   const whatsapp = findWhatsapp(lines);
   if (whatsapp) result.whatsapp = whatsapp;
   const zone = findZone(lines, matchers, nameLine, name);

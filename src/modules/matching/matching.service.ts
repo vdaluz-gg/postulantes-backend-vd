@@ -2,6 +2,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Application } from '../applications/entities/application.entity';
+import { candidateNameParts } from '../candidates/dto/candidate.dto';
 import { Candidate } from '../candidates/entities/candidate.entity';
 import { CvDocument } from '../cv/entities/cv-document.entity';
 import { JobOffer } from '../job-offers/entities/job-offer.entity';
@@ -71,6 +72,7 @@ export class MatchingService {
           candidate: {
             id: person.id,
             fullName: person.fullName,
+            ...candidateNameParts(person),
             zone: person.zone?.name ?? null,
             position: person.position,
             identityStatus: person.identityStatus,

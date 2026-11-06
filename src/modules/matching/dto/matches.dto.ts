@@ -21,7 +21,15 @@ export class MatchesQueryDto {
 
 export interface MatchItemDto {
   /** Solo lo necesario para decidir; el contacto y el DNI se ven en la ficha del postulante. */
-  candidate: { id: string; fullName: string; zone: string | null; position: string | null; identityStatus: string };
+  candidate: {
+    id: string;
+    fullName: string;
+    firstName: string | null;
+    lastName: string | null;
+    zone: string | null;
+    position: string | null;
+    identityStatus: string;
+  };
   score: number;
   reasons: MatchReason[];
   /** Ya se postuló a esta oferta. */

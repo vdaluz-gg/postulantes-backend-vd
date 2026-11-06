@@ -18,6 +18,8 @@ describe('TextCvReader', () => {
     const pdf = textPdf(['Lucía Fernández', 'Localidad: Monte Grande']);
     await expect(reader.read({ buffer: pdf, mimeType: 'application/pdf', fileName: 'cv.pdf' })).resolves.toEqual({
       fullName: 'Lucía Fernández',
+      firstName: 'Lucía',
+      lastName: 'Fernández',
       zone: 'Monte Grande',
     });
     expect(find).toHaveBeenCalledWith(expect.objectContaining({ where: { active: true } }));
@@ -25,7 +27,12 @@ describe('TextCvReader', () => {
 
   it('lee un DOCX', async () => {
     const docx = buildDocx(wordParagraphs(['Martín Gómez', 'DNI 40.123.456']));
-    await expect(reader.read({ buffer: docx, mimeType: DOCX, fileName: 'cv.docx' })).resolves.toEqual({ fullName: 'Martín Gómez', dni: '40.123.456' });
+    await expect(reader.read({ buffer: docx, mimeType: DOCX, fileName: 'cv.docx' })).resolves.toEqual({
+      fullName: 'Martín Gómez',
+      firstName: 'Martín',
+      lastName: 'Gómez',
+      dni: '40.123.456',
+    });
   });
 
   it('lee un DOC (heurístico)', async () => {
