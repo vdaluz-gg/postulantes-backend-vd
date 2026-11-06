@@ -2,6 +2,7 @@ import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { BaseEntity } from '../../../common/base.entity';
 import { Candidate } from '../../candidates/entities/candidate.entity';
 import { JobOffer } from '../../job-offers/entities/job-offer.entity';
+import type { ApplicationAnswer } from '../../site-config/site-config.rules';
 
 /** Estados de la postulación. Etapas del portal: 1 Postulación, 2 Agente IA, 3 Selectora, 4 Resultado. */
 export const APPLICATION_STATUSES = [
@@ -66,4 +67,8 @@ export class Application extends BaseEntity {
 
   @Column({ type: 'uuid', nullable: true })
   cvDocumentId: string | null;
+
+  /** Respuestas a los campos que el backoffice agregó al formulario, con la etiqueta que tenían al postularse. */
+  @Column({ type: 'jsonb', default: () => "'[]'" })
+  answers: ApplicationAnswer[];
 }

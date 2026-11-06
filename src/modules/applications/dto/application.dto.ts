@@ -1,7 +1,8 @@
-import { IsIn, IsOptional, IsString, IsUUID, Matches, MaxLength } from 'class-validator';
+import { IsIn, IsObject, IsOptional, IsString, IsUUID, Matches, MaxLength } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import { TrimString } from '../../../common/validators/ar-validators.decorators';
 import { CandidateContactDto } from '../../candidates/dto/candidate-contact.dto';
+import type { ApplicationAnswer } from '../../site-config/site-config.rules';
 import { PUBLIC_CANDIDATE_CHANNELS } from '../../candidates/entities/candidate.entity';
 import { SESSION_ID_PATTERN } from '../../consents/dto/consent.dto';
 import { StepState } from '../application-flow';
@@ -27,6 +28,11 @@ export class ApplyDto extends CandidateContactDto {
   @IsOptional()
   @IsIn(PUBLIC_CANDIDATE_CHANNELS)
   channel?: (typeof PUBLIC_CANDIDATE_CHANNELS)[number];
+
+  /** Respuestas a los campos agregados desde el backoffice, por clave del campo. Se revisan contra lo publicado. */
+  @IsOptional()
+  @IsObject()
+  answers?: Record<string, unknown>;
 }
 
 export class UpdateApplicationStatusDto {
@@ -96,6 +102,8 @@ export interface ApplicationDetailDto extends ApplicationSummaryDto {
   candidateContact: { email: string; whatsapp: string };
   cvDocumentId: string | null;
   onboarding: OnboardingDto;
+  /** Respuestas a los campos agregados desde el backoffice. */
+  answers: ApplicationAnswer[];
 }
 
 export const onboardingOf = (a: Application): OnboardingDto => {

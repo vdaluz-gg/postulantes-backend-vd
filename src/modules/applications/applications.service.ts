@@ -9,6 +9,7 @@ import { Consent } from '../consents/entities/consent.entity';
 import { CvDocument } from '../cv/entities/cv-document.entity';
 import { Interview } from '../interviews/entities/interview.entity';
 import { JobOffer } from '../job-offers/entities/job-offer.entity';
+import { SiteConfigService } from '../site-config/site-config.service';
 import { appendHistory, buildSteps, canTransition, generateTrackingCode, isFinalStatus, TRACKING_CODE_PATTERN } from './application-flow';
 import {
   ApplicationDetailDto,
@@ -40,6 +41,7 @@ export class ApplicationsService {
     @Inject(EMPLOYEE_ONBOARDING) private readonly onboarding: EmployeeOnboarding,
     private readonly candidatesService: CandidatesService,
     private readonly consentsService: ConsentsService,
+    private readonly siteConfig: SiteConfigService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -49,6 +51,7 @@ export class ApplicationsService {
     const offer = dto.offerCode ? await this.offers.findOneBy({ code: dto.offerCode, status: 'published' }) : null;
     if (dto.offerCode && !offer) throw new NotFoundException('Oferta no encontrada');
     const position = offer?.title ?? (dto.position?.trim() || SPONTANEOUS_POSITION);
+    const answers = await this.siteConfig.checkApplicationAnswers(dto.answers ?? {});
 
     // Con un DNI ya registrado solo se reutiliza al postulante si el mail coincide: así nadie pisa los datos de otra persona.
     const existing = await this.candidates.findOneBy({ dni: dto.dni });
@@ -79,6 +82,7 @@ export class ApplicationsService {
           status: 'received',
           history: [{ at: now, status: 'received' }],
           cvDocumentId: cv?.id ?? null,
+          answers,
         }),
       );
       if (cv) await tx.update(CvDocument, { id: cv.id }, { candidateId });
@@ -150,6 +154,7 @@ export class ApplicationsService {
       candidateContact: { email: a.candidate.email, whatsapp: a.candidate.whatsapp },
       cvDocumentId: a.cvDocumentId,
       onboarding: onboardingOf(a),
+      answers: a.answers,
     };
   }
 
