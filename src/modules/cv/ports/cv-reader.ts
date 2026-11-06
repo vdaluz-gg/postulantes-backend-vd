@@ -7,8 +7,9 @@ export interface CvReadInput {
 }
 
 /**
- * Puerto del lector de CV con IA. Hoy lo cumple un mock; la versión real llamará al servicio de IA sin que
- * cambie el servicio ni el controlador. Debe lanzar un error si no puede leer el archivo.
+ * Puerto del lector de CV. Hoy lo cumple `TextCvReader` (texto del archivo + reglas); una versión con IA puede
+ * reemplazarlo sin que cambie el servicio ni el controlador. Si el archivo no tiene datos legibles devuelve {}
+ * (el formulario queda para completar a mano); lanza un error solo si falla el lector o su proveedor.
  */
 export interface CvReader {
   read(input: CvReadInput): Promise<CvExtractedData>;
