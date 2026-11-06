@@ -14,6 +14,7 @@ import { InterviewsModule } from './modules/interviews/interviews.module';
 import { JobOffersModule } from './modules/job-offers/job-offers.module';
 import { MatchingModule } from './modules/matching/matching.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { SiteConfigModule } from './modules/site-config/site-config.module';
 import { ZonesModule } from './modules/zones/zones.module';
 import { CvStorageModule } from './modules/cv/cv-storage.module';
 import { HealthController } from './modules/health/health.controller';
@@ -38,6 +39,7 @@ import { HealthController } from './modules/health/health.controller';
     InterviewsModule,
     MatchingModule,
     ReportsModule,
+    SiteConfigModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
