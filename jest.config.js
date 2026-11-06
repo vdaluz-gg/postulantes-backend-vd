@@ -9,6 +9,8 @@ module.exports = {
   moduleFileExtensions: ['js', 'json', 'ts'],
   transform: { '^.+\\.ts$': ['ts-jest', { tsconfig: 'tsconfig.json' }] },
   testEnvironment: 'node',
+  // Cada suite de integración levanta la app completa; con muchas en paralelo 5 s (el valor por defecto) no alcanza.
+  testTimeout: 30000,
   collectCoverageFrom: ['src/**/*.ts', '!src/main.ts', '!src/database/seed/run-seed.ts', '!src/database/data-source.ts', '!src/**/*.module.ts'],
   coverageDirectory: 'coverage',
   setupFiles: ['<rootDir>/test/setup-env.ts'],
