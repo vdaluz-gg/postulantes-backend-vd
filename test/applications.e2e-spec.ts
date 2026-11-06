@@ -129,6 +129,7 @@ describe('Postulaciones (integración)', () => {
             { label: 'Resultado', state: 'next' },
           ],
           history: [{ at: expect.any(String), status: 'received' }],
+          interview: null,
           updatedAt: expect.any(String),
         });
         expect(JSON.stringify(res.body)).not.toMatch(/dni|email|whatsapp|38412907/i);

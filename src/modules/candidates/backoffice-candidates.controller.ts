@@ -32,7 +32,7 @@ export class BackofficeCandidatesController {
   @Post()
   @ApiOperation({ summary: 'Sumar un postulante' })
   create(@Body() dto: CreateCandidateDto): Promise<CandidateDto> {
-    return this.service.create(dto, 'backoffice');
+    return this.service.create(dto, 'backoffice', dto.channel);
   }
 
   @Patch(':id')

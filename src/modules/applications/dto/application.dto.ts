@@ -2,6 +2,7 @@ import { IsIn, IsOptional, IsString, IsUUID, Matches, MaxLength } from 'class-va
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import { TrimString } from '../../../common/validators/ar-validators.decorators';
 import { CandidateContactDto } from '../../candidates/dto/candidate-contact.dto';
+import { PUBLIC_CANDIDATE_CHANNELS } from '../../candidates/entities/candidate.entity';
 import { SESSION_ID_PATTERN } from '../../consents/dto/consent.dto';
 import { StepState } from '../application-flow';
 import { Application, APPLICATION_STATUSES, ApplicationHistoryEntry, ApplicationStatus, STATUS_STAGE } from '../entities/application.entity';
@@ -21,6 +22,11 @@ export class ApplyDto extends CandidateContactDto {
   @IsOptional()
   @Matches(SESSION_ID_PATTERN)
   sessionId?: string;
+
+  /** Por dónde se postula: nueva web (por defecto) o check-in. Los demás canales los asigna el equipo. */
+  @IsOptional()
+  @IsIn(PUBLIC_CANDIDATE_CHANNELS)
+  channel?: (typeof PUBLIC_CANDIDATE_CHANNELS)[number];
 }
 
 export class UpdateApplicationStatusDto {
@@ -61,7 +67,16 @@ export interface TrackingDto extends ApplyResponseDto {
   steps: { label: string; state: StepState }[];
   /** Historial sin notas internas. */
   history: { at: string; status: ApplicationStatus }[];
+  /** Próxima entrevista agendada (sin datos de otras personas); vacío si no hay ninguna. */
+  interview: { startsAt: string; endsAt: string; place: { name: string; address: string | null } } | null;
   updatedAt: Date;
+}
+
+/** Alta del colaborador en el ERP, que se dispara al contratar. */
+export type OnboardingStatus = 'not_applicable' | 'pending' | 'done';
+export interface OnboardingDto {
+  status: OnboardingStatus;
+  employeeNumber: string | null;
 }
 
 export interface ApplicationSummaryDto {
@@ -80,7 +95,13 @@ export interface ApplicationDetailDto extends ApplicationSummaryDto {
   history: ApplicationHistoryEntry[];
   candidateContact: { email: string; whatsapp: string };
   cvDocumentId: string | null;
+  onboarding: OnboardingDto;
 }
+
+export const onboardingOf = (a: Application): OnboardingDto => {
+  if (a.status !== 'hired') return { status: 'not_applicable', employeeNumber: null };
+  return a.candidate.employeeNumber ? { status: 'done', employeeNumber: a.candidate.employeeNumber } : { status: 'pending', employeeNumber: null };
+};
 
 export const offerRef = (a: Application): { ref: string; title: string } | null =>
   a.jobOffer ? { ref: a.jobOffer.code, title: a.jobOffer.title } : null;

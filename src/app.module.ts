@@ -10,7 +10,10 @@ import { CvModule } from './modules/cv/cv.module';
 import { ApplicationsModule } from './modules/applications/applications.module';
 import { ConsentsModule } from './modules/consents/consents.module';
 import { IdentityModule } from './modules/identity/identity.module';
+import { InterviewsModule } from './modules/interviews/interviews.module';
 import { JobOffersModule } from './modules/job-offers/job-offers.module';
+import { MatchingModule } from './modules/matching/matching.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import { ZonesModule } from './modules/zones/zones.module';
 import { CvStorageModule } from './modules/cv/cv-storage.module';
 import { HealthController } from './modules/health/health.controller';
@@ -32,6 +35,9 @@ import { HealthController } from './modules/health/health.controller';
     ConsentsModule,
     ApplicationsModule,
     IdentityModule,
+    InterviewsModule,
+    MatchingModule,
+    ReportsModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

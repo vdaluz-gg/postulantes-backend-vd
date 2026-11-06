@@ -1,8 +1,10 @@
 import { BadRequestException, ConflictException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, QueryFailedError, Repository } from 'typeorm';
-import { Page, paginate } from '../../common/pagination';
+import { DataSource, In, Repository } from 'typeorm';
+import { Page } from '../../common/pagination';
+import { isUniqueViolation } from '../../common/utils/db-errors';
 import { escapeLike } from '../../common/utils/like';
+import { Interview } from '../interviews/entities/interview.entity';
 import { Application } from '../applications/entities/application.entity';
 import { Consent } from '../consents/entities/consent.entity';
 import { CvDocument } from '../cv/entities/cv-document.entity';
@@ -18,9 +20,7 @@ import {
   UpdateCandidateDto,
   toCandidateDto,
 } from './dto/candidate.dto';
-import { Candidate, CandidateSource } from './entities/candidate.entity';
-
-const isUniqueViolation = (e: unknown): boolean => e instanceof QueryFailedError && (e.driverError as { code?: string })?.code === '23505';
+import { Candidate, CandidateChannel, CandidateSource } from './entities/candidate.entity';
 
 @Injectable()
 export class CandidatesService {
@@ -53,7 +53,7 @@ export class CandidatesService {
     return c;
   }
 
-  async create(dto: CreateCandidateDto, source: CandidateSource = 'backoffice'): Promise<CandidateDto> {
+  async create(dto: CreateCandidateDto, source: CandidateSource = 'backoffice', channel: CandidateChannel = 'backoffice'): Promise<CandidateDto> {
     this.assertCoordinates(dto);
     await this.assertZone(dto.zoneId);
     if (await this.candidates.existsBy({ dni: dto.dni })) throw new ConflictException('Ya existe un postulante con ese DNI');
@@ -70,6 +70,7 @@ export class CandidatesService {
           longitude: dto.longitude ?? null,
           whatsappOptIn: dto.whatsappOptIn ?? false,
           source,
+          channel,
         }),
       );
       return toCandidateDto(await this.load(saved.id));
@@ -96,6 +97,7 @@ export class CandidatesService {
     if (query.zoneId) qb.andWhere('c.zoneId = :zoneId', { zoneId: query.zoneId });
     if (query.identityStatus) qb.andWhere('c.identityStatus = :identityStatus', { identityStatus: query.identityStatus });
     if (query.source) qb.andWhere('c.source = :source', { source: query.source });
+    if (query.channel) qb.andWhere('c.channel = :channel', { channel: query.channel });
 
     const [rows, total] = await qb
       .orderBy('c.createdAt', 'DESC')
@@ -168,7 +170,9 @@ export class CandidatesService {
   async remove(id: string): Promise<void> {
     await this.load(id);
     const cvs = await this.cvDocuments.findBy({ candidateId: id });
+    const applicationIds = (await this.applications.find({ where: { candidateId: id }, select: { id: true } })).map((a) => a.id);
     await this.dataSource.transaction(async (tx) => {
+      if (applicationIds.length) await tx.delete(Interview, { applicationId: In(applicationIds) });
       await tx.delete(Application, { candidateId: id });
       await tx.delete(Consent, { candidateId: id });
       await tx.delete(IdentityVerification, { candidateId: id });

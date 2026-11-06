@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Page } from '../../common/pagination';
 import { AdminOnly } from '../auth/decorators/admin-only.decorator';
@@ -27,5 +27,11 @@ export class BackofficeApplicationsController {
   @ApiOperation({ summary: 'Cambiar el estado de la postulación (queda en el historial)' })
   updateStatus(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateApplicationStatusDto): Promise<ApplicationDetailDto> {
     return this.service.updateStatus(id, dto);
+  }
+
+  @Post(':id/onboarding')
+  @ApiOperation({ summary: 'Reintentar el alta del colaborador en el ERP cuando quedó pendiente tras la contratación' })
+  retryOnboarding(@Param('id', ParseUUIDPipe) id: string): Promise<ApplicationDetailDto> {
+    return this.service.retryOnboarding(id);
   }
 }

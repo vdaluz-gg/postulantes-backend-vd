@@ -10,11 +10,15 @@ import { ApplicationsController } from './applications.controller';
 import { ApplicationsService } from './applications.service';
 import { BackofficeApplicationsController } from './backoffice-applications.controller';
 import { Application } from './entities/application.entity';
+import { Interview } from '../interviews/entities/interview.entity';
+import { MockEmployeeOnboarding } from './mock-employee-onboarding';
+import { EMPLOYEE_ONBOARDING } from './ports/employee-onboarding';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Application, Candidate, JobOffer, CvDocument]), CandidatesModule, ConsentsModule, AuthModule],
+  imports: [TypeOrmModule.forFeature([Application, Candidate, JobOffer, CvDocument, Interview]), CandidatesModule, ConsentsModule, AuthModule],
   controllers: [ApplicationsController, BackofficeApplicationsController],
-  providers: [ApplicationsService],
+  // Para el alta real: reemplazar MockEmployeeOnboarding por la clase que llame al ADP BOT / ERP.
+  providers: [ApplicationsService, { provide: EMPLOYEE_ONBOARDING, useClass: MockEmployeeOnboarding }],
   exports: [ApplicationsService],
 })
 export class ApplicationsModule {}

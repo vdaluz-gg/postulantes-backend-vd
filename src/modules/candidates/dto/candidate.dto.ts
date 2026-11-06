@@ -2,10 +2,24 @@ import { PartialType } from '@nestjs/swagger';
 import { IsIn, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import { TrimString } from '../../../common/validators/ar-validators.decorators';
-import { Candidate, CANDIDATE_SOURCES, CandidateSource, IDENTITY_STATUSES, IdentityStatus } from '../entities/candidate.entity';
+import {
+  Candidate,
+  CANDIDATE_CHANNELS,
+  CANDIDATE_SOURCES,
+  CandidateChannel,
+  CandidateSource,
+  IDENTITY_STATUSES,
+  IdentityStatus,
+  ProfileStage,
+} from '../entities/candidate.entity';
 import { CandidateContactDto } from './candidate-contact.dto';
 
-export class CreateCandidateDto extends CandidateContactDto {}
+export class CreateCandidateDto extends CandidateContactDto {
+  /** Canal de origen; si no se indica, es una carga del backoffice. Después del alta no se modifica. */
+  @IsOptional()
+  @IsIn(CANDIDATE_CHANNELS)
+  channel?: CandidateChannel;
+}
 export class UpdateCandidateDto extends PartialType(CandidateContactDto) {}
 
 export class ListCandidatesQueryDto extends PaginationQueryDto {
@@ -27,6 +41,10 @@ export class ListCandidatesQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsIn(CANDIDATE_SOURCES)
   source?: CandidateSource;
+
+  @IsOptional()
+  @IsIn(CANDIDATE_CHANNELS)
+  channel?: CandidateChannel;
 }
 
 export interface CandidateDto {
@@ -40,6 +58,9 @@ export interface CandidateDto {
   latitude: number | null;
   longitude: number | null;
   source: CandidateSource;
+  channel: CandidateChannel;
+  profileStage: ProfileStage;
+  employeeNumber: string | null;
   whatsappOptIn: boolean;
   identityStatus: IdentityStatus;
   createdAt: Date;
@@ -71,6 +92,9 @@ export const toCandidateDto = (c: Candidate): CandidateDto => ({
   latitude: c.latitude,
   longitude: c.longitude,
   source: c.source,
+  channel: c.channel,
+  profileStage: c.profileStage,
+  employeeNumber: c.employeeNumber,
   whatsappOptIn: c.whatsappOptIn,
   identityStatus: c.identityStatus,
   createdAt: c.createdAt,

@@ -24,7 +24,7 @@ export const normalizeText = (text: string): string =>
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '');
 
-const termsOf = (query: string): string[] =>
+export const termsOf = (query: string): string[] =>
   normalizeText(query)
     .split(/[^a-z0-9]+/)
     .filter((w) => w.length > 2 && !STOPWORDS.has(w));

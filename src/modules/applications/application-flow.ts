@@ -1,5 +1,5 @@
 import { randomInt } from 'crypto';
-import { ApplicationStatus, STATUS_STAGE } from './entities/application.entity';
+import { ApplicationHistoryEntry, ApplicationStatus, STATUS_STAGE } from './entities/application.entity';
 
 /** Orden del circuito principal; rechazo y baja se pueden dar desde cualquier estado no final. */
 const FLOW: readonly ApplicationStatus[] = ['received', 'ai_review', 'recruiter_review', 'interview', 'hired'];
@@ -12,6 +12,16 @@ export function canTransition(from: ApplicationStatus, to: ApplicationStatus): b
   if (isFinalStatus(from) || from === to) return false;
   if (to === 'rejected' || to === 'withdrawn') return true;
   return FLOW.indexOf(to) > FLOW.indexOf(from);
+}
+
+/** Historial con una entrada más (sin tocar el original). La nota es interna: el seguimiento público no la muestra. */
+export function appendHistory(
+  history: readonly ApplicationHistoryEntry[],
+  status: ApplicationStatus,
+  note?: string,
+  at: Date = new Date(),
+): ApplicationHistoryEntry[] {
+  return [...history, { at: at.toISOString(), status, ...(note ? { note } : {}) }];
 }
 
 export const STAGE_LABELS = ['Postulación', 'Agente IA', 'Selectora', 'Resultado'] as const;
