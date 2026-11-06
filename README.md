@@ -34,6 +34,9 @@ pg-mem (Postgres en memoria para los tests) · Docker / Docker Compose · Swagge
 - Aceptar o rechazar los permisos de voz, imagen y ubicación (queda registrado el consentimiento).
 - Postularse, con o sin oferta, y consultar el estado con un código de seguimiento. Cuando se le agenda una
   entrevista, ve el día, la hora y el lugar.
+- Responder los campos que el backoffice agregó al formulario (`answers`): se revisan contra la configuración
+  publicada y se guardan con la postulación, con la etiqueta que tenían.
+- Leer la configuración publicada de su portal: `GET /site-config/:audience` (postulantes, clientes o colaboradores).
 
 **Backoffice (API privada, `/api/v1/backoffice`, con sesión de administrador)**
 - Alta de administradores (con una clave de alta) e inicio de sesión con JWT.
@@ -45,6 +48,9 @@ pg-mem (Postgres en memoria para los tests) · Docker / Docker Compose · Swagge
 - Salas y entrevistas: agenda sin superposiciones de sala ni de postulante.
 - Alta del colaborador al contratar (hoy mock; si el sistema externo falla, queda pendiente y se reintenta).
 - Reportes de postulaciones por estado, canal y oferta.
+- Configuración de los portales (campos, documentos, avisos, canales y textos): guardar borrador y publicar.
+  Cada guardado es una versión nueva; si otra persona guardó antes, responde 409. Nombre y apellido, mail, DNI y
+  WhatsApp no se pueden ocultar ni volver opcionales en el formulario de postulación.
 
 **Preparado para el futuro:** validación de identidad contra un servicio oficial. Hoy hay una interfaz y un
 proveedor mock (ver `docs/renaper-integracion.md`).
