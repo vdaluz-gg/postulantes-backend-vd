@@ -13,3 +13,6 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 .idea/
+
+# Documentación y notas: solo locales, no se suben al repo
+*.md
