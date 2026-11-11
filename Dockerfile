@@ -1,5 +1,5 @@
 # ---- build ----
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
@@ -8,7 +8,7 @@ COPY src ./src
 RUN npm run build && npm prune --omit=dev
 
 # ---- runtime ----
-FROM node:22-alpine
+FROM node:26-alpine
 ENV NODE_ENV=production
 WORKDIR /app
 # musl (con musl-utils, que sale del mismo origen) y zlib: los arreglos (CVE-2026-107891 y CVE-2026-4738) todavía no están en Alpine 3.24 estable, solo en edge.
