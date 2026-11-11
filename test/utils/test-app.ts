@@ -32,6 +32,11 @@ export class InMemoryFileStorage implements FileStorage {
   async save(key: string, content: Buffer): Promise<void> {
     this.files.set(key, content);
   }
+  async read(key: string): Promise<Buffer> {
+    const file = this.files.get(key);
+    if (!file) throw new Error('El archivo no existe');
+    return file;
+  }
   async remove(key: string): Promise<void> {
     this.files.delete(key);
   }

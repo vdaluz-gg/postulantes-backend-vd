@@ -15,6 +15,8 @@ export interface AppEnv {
   readonly UPLOAD_DIR: string;
   /** Pedidos por minuto y por IP. */
   readonly THROTTLE_LIMIT: number;
+  /** Clave (base64 de 32 bytes) con la que se cifran los CV guardados. Vacía = sin cifrar (solo local). */
+  readonly CV_ENCRYPTION_KEY: string;
   /** Cantidad de proxies delante de la API (0 = ninguno, como en local). */
   readonly TRUST_PROXY: number;
   /** Redirige http a https (requiere TRUST_PROXY). Apagado por defecto. */
@@ -33,6 +35,8 @@ const str = (raw: Raw, key: string, fallback = ''): string => {
 };
 /** Textos típicos de un valor sin completar. */
 const PLACEHOLDER = /cambiar|changeme|change-me/i;
+/** base64 estricto (sin caracteres de más) que decodifica a exactamente 32 bytes. */
+const isBase64Key32 = (value: string): boolean => /^[A-Za-z0-9+/]+={0,2}$/.test(value) && Buffer.from(value, 'base64').length === 32;
 const bool = (raw: Raw, key: string): boolean => str(raw, key, 'false').toLowerCase() === 'true';
 
 /**
@@ -75,6 +79,10 @@ export function validateEnv(raw: Raw): AppEnv {
     }
   }
 
+  const cvKey = str(raw, 'CV_ENCRYPTION_KEY');
+  if (production && !cvKey) errors.push('CV_ENCRYPTION_KEY es obligatoria en producción (base64 de 32 bytes: openssl rand -base64 32)');
+  if (cvKey && !isBase64Key32(cvKey)) errors.push('CV_ENCRYPTION_KEY debe ser base64 de exactamente 32 bytes (openssl rand -base64 32)');
+
   const trustProxy = Number(str(raw, 'TRUST_PROXY', '0'));
   if (!Number.isInteger(trustProxy) || trustProxy < 0 || trustProxy > 10) errors.push('TRUST_PROXY debe ser un entero entre 0 y 10');
   const forceHttps = bool(raw, 'FORCE_HTTPS');
@@ -108,6 +116,7 @@ export function validateEnv(raw: Raw): AppEnv {
     ADMIN_REGISTRATION_KEY: registrationKey,
     UPLOAD_DIR: str(raw, 'UPLOAD_DIR', './uploads'),
     THROTTLE_LIMIT: Number(str(raw, 'THROTTLE_LIMIT', '120')) || 120,
+    CV_ENCRYPTION_KEY: cvKey,
     TRUST_PROXY: trustProxy,
     FORCE_HTTPS: forceHttps,
     RENAPER_ENABLED: renaper,

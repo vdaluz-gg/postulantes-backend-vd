@@ -22,6 +22,10 @@ export class LocalFileStorage implements FileStorage {
     await fs.writeFile(this.pathFor(key), content, { flag: 'wx' });
   }
 
+  async read(key: string): Promise<Buffer> {
+    return fs.readFile(this.pathFor(key));
+  }
+
   async remove(key: string): Promise<void> {
     await fs.rm(this.pathFor(key), { force: true });
   }

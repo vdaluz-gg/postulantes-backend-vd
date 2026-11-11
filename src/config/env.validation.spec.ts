@@ -33,6 +33,34 @@ describe('validateEnv', () => {
     expect(validateEnv({ ...base, FORCE_HTTPS: 'true', TRUST_PROXY: '1' }).FORCE_HTTPS).toBe(true);
   });
 
+  describe('CV_ENCRYPTION_KEY (cifrado de los CV guardados)', () => {
+    const key = Buffer.alloc(32, 7).toString('base64');
+
+    it('en local es opcional: sin clave los CV se guardan sin cifrar', () => {
+      expect(validateEnv(base).CV_ENCRYPTION_KEY).toBe('');
+      expect(validateEnv({ ...base, CV_ENCRYPTION_KEY: key }).CV_ENCRYPTION_KEY).toBe(key);
+    });
+
+    it('si se define tiene que ser base64 de exactamente 32 bytes', () => {
+      for (const bad of ['corta', Buffer.alloc(16).toString('base64'), Buffer.alloc(33).toString('base64'), '!!!no-es-base64!!!']) {
+        expect(() => validateEnv({ ...base, CV_ENCRYPTION_KEY: bad })).toThrow(/CV_ENCRYPTION_KEY/);
+      }
+    });
+
+    it('en producción es obligatoria', () => {
+      const prod = {
+        ...base,
+        NODE_ENV: 'production',
+        JWT_SECRET: 'k8Zp2vQ9xLw4TnR7bYc1dFg6HjM3sUa0EeIoXz5',
+        ADMIN_REGISTRATION_KEY: 'alta-9fT2qLmX',
+        DB_PASSWORD: 'Pw-real-8sK2',
+        CORS_ORIGINS: 'https://portal.ejemplo.com',
+      };
+      expect(() => validateEnv(prod)).toThrow(/CV_ENCRYPTION_KEY.*obligatoria/);
+      expect(validateEnv({ ...prod, CV_ENCRYPTION_KEY: key }).CV_ENCRYPTION_KEY).toBe(key);
+    });
+  });
+
   it('convierte tipos desde strings', () => {
     const env = validateEnv({ ...base, PORT: '4000', DB_SYNCHRONIZE: 'true', CORS_ORIGINS: 'http://a.com, http://b.com' });
     expect(env.PORT).toBe(4000);
@@ -65,6 +93,7 @@ describe('validateEnv', () => {
       ADMIN_REGISTRATION_KEY: 'alta-9fT2qLmX',
       DB_PASSWORD: 'Pw-real-8sK2',
       CORS_ORIGINS: 'https://portal.ejemplo.com',
+      CV_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString('base64'),
     };
 
     it('acepta una configuración completa', () => {

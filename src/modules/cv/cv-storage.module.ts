@@ -1,13 +1,12 @@
 import { Global, Module } from '@nestjs/common';
 import { APP_ENV } from '../../config/app-config.module';
-import { AppEnv } from '../../config/env.validation';
-import { LocalFileStorage } from './local-file-storage';
+import { createFileStorage } from './file-storage.factory';
 import { FILE_STORAGE } from './ports/file-storage';
 
-/** Provee el almacenamiento de archivos. Para pasar a S3/Blob alcanza con cambiar el `useFactory`. */
+/** Provee el almacenamiento de archivos (ver createFileStorage). Para pasar a S3/Blob se cambia la fábrica. */
 @Global()
 @Module({
-  providers: [{ provide: FILE_STORAGE, inject: [APP_ENV], useFactory: (env: AppEnv) => new LocalFileStorage(env.UPLOAD_DIR) }],
+  providers: [{ provide: FILE_STORAGE, inject: [APP_ENV], useFactory: createFileStorage }],
   exports: [FILE_STORAGE],
 })
 export class CvStorageModule {}
