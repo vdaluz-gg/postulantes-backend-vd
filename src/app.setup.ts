@@ -10,7 +10,8 @@ export const API_PREFIX = 'api/v1';
 export function configureApp(app: INestApplication, env: AppEnv): void {
   app.setGlobalPrefix(API_PREFIX);
   app.use(helmet());
-  app.enableCors({ origin: [...env.corsOrigins], credentials: true });
+  // Sin `credentials`: la sesión del backoffice viaja en el header Authorization, no en cookies.
+  app.enableCors({ origin: [...env.corsOrigins] });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
