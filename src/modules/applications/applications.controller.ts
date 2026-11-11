@@ -4,6 +4,7 @@ import { Throttle } from '@nestjs/throttler';
 import { ApplicationsService } from './applications.service';
 import { ApplyDto, ApplyResponseDto, TrackingDto } from './dto/application.dto';
 import { Public } from '../auth/decorators/public.decorator';
+import { RequireCaptcha } from '../captcha/captcha.guard';
 
 @ApiTags('Postulante')
 @Public()
@@ -12,6 +13,7 @@ export class ApplicationsController {
   constructor(private readonly service: ApplicationsService) {}
 
   @Post()
+  @RequireCaptcha()
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @ApiOperation({ summary: 'Postularse (a una oferta o de forma espontánea). Devuelve el código de seguimiento' })
   apply(@Body() dto: ApplyDto): Promise<ApplyResponseDto> {

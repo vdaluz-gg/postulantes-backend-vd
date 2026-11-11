@@ -5,6 +5,7 @@ import { Throttle } from '@nestjs/throttler';
 import { CV_MAX_BYTES } from './cv-file-type';
 import { CvService, CvUploadResult } from './cv.service';
 import { Public } from '../auth/decorators/public.decorator';
+import { RequireCaptcha } from '../captcha/captcha.guard';
 
 @ApiTags('Postulante')
 @Public()
@@ -13,6 +14,7 @@ export class CvController {
   constructor(private readonly service: CvService) {}
 
   @Post()
+  @RequireCaptcha()
   // Cada lectura con IA cuesta: límite más bajo que el general.
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: CV_MAX_BYTES, files: 1 } }))

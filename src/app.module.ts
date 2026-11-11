@@ -19,6 +19,7 @@ import { SiteConfigModule } from './modules/site-config/site-config.module';
 import { ZonesModule } from './modules/zones/zones.module';
 import { CvStorageModule } from './modules/cv/cv-storage.module';
 import { HealthController } from './modules/health/health.controller';
+import { CaptchaModule } from './modules/captcha/captcha.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { HealthController } from './modules/health/health.controller';
     }),
     DatabaseModule,
     CvStorageModule,
+    CaptchaModule,
     ZonesModule,
     JobOffersModule,
     AuthModule,

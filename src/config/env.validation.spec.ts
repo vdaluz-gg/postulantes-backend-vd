@@ -33,6 +33,16 @@ describe('validateEnv', () => {
     expect(validateEnv({ ...base, FORCE_HTTPS: 'true', TRUST_PROXY: '1' }).FORCE_HTTPS).toBe(true);
   });
 
+  describe('captcha', () => {
+    it('viene apagado: en local no se pide nada', () => {
+      expect(validateEnv(base).CAPTCHA_ENABLED).toBe(false);
+    });
+    it('al encenderlo exige la clave del proveedor', () => {
+      expect(() => validateEnv({ ...base, CAPTCHA_ENABLED: 'true' })).toThrow(/CAPTCHA_SECRET/);
+      expect(validateEnv({ ...base, CAPTCHA_ENABLED: 'true', CAPTCHA_SECRET: 'clave' }).CAPTCHA_ENABLED).toBe(true);
+    });
+  });
+
   describe('limpieza de CV sin postulante', () => {
     it('viene apagada fuera de producción (nadie pierde archivos mientras prueba) y encendida en producción', () => {
       expect(validateEnv(base).CV_CLEANUP_ENABLED).toBe(false);

@@ -17,6 +17,10 @@ export interface AppEnv {
   readonly THROTTLE_LIMIT: number;
   /** Clave (base64 de 32 bytes) con la que se cifran los CV guardados. Vacía = sin cifrar (solo local). */
   readonly CV_ENCRYPTION_KEY: string;
+  /** Pide un token anti-robots (header X-Captcha-Token) al postularse y al subir un CV. Apagado por defecto. */
+  readonly CAPTCHA_ENABLED: boolean;
+  /** Clave secreta del proveedor de captcha. */
+  readonly CAPTCHA_SECRET: string;
   /** Borra periódicamente los CV subidos que nunca se asociaron a un postulante. Por defecto, solo en producción. */
   readonly CV_CLEANUP_ENABLED: boolean;
   /** Horas que un CV sin postulante espera antes de borrarse. */
@@ -87,6 +91,9 @@ export function validateEnv(raw: Raw): AppEnv {
   if (production && !cvKey) errors.push('CV_ENCRYPTION_KEY es obligatoria en producción (base64 de 32 bytes: openssl rand -base64 32)');
   if (cvKey && !isBase64Key32(cvKey)) errors.push('CV_ENCRYPTION_KEY debe ser base64 de exactamente 32 bytes (openssl rand -base64 32)');
 
+  const captcha = bool(raw, 'CAPTCHA_ENABLED');
+  if (captcha && !str(raw, 'CAPTCHA_SECRET')) errors.push('CAPTCHA_SECRET es obligatoria cuando CAPTCHA_ENABLED=true');
+
   const cvTtl = Number(str(raw, 'CV_ORPHAN_TTL_HOURS', '24'));
   if (!Number.isInteger(cvTtl) || cvTtl < 1 || cvTtl > 720) errors.push('CV_ORPHAN_TTL_HOURS debe ser un entero de horas entre 1 y 720');
   // Fuera de producción viene apagada: en local no se pierde ningún archivo mientras se prueba.
@@ -125,6 +132,8 @@ export function validateEnv(raw: Raw): AppEnv {
     ADMIN_REGISTRATION_KEY: registrationKey,
     UPLOAD_DIR: str(raw, 'UPLOAD_DIR', './uploads'),
     THROTTLE_LIMIT: Number(str(raw, 'THROTTLE_LIMIT', '120')) || 120,
+    CAPTCHA_ENABLED: captcha,
+    CAPTCHA_SECRET: str(raw, 'CAPTCHA_SECRET'),
     CV_ENCRYPTION_KEY: cvKey,
     CV_CLEANUP_ENABLED: cvCleanup,
     CV_ORPHAN_TTL_HOURS: cvTtl,
