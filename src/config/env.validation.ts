@@ -7,6 +7,10 @@ export interface AppEnv {
   readonly DB_USER: string;
   readonly DB_PASSWORD: string;
   readonly DB_NAME: string;
+  /** TLS hacia PostgreSQL, verificando el certificado. Apagado por defecto (la base de local no lo usa). */
+  readonly DB_SSL: boolean;
+  /** Certificado (CA, PEM) de la base, si usa uno propio. */
+  readonly DB_SSL_CA: string;
   readonly DB_SYNCHRONIZE: boolean;
   readonly SEED_ON_BOOT: boolean;
   readonly JWT_SECRET: string;
@@ -91,6 +95,10 @@ export function validateEnv(raw: Raw): AppEnv {
   if (production && !cvKey) errors.push('CV_ENCRYPTION_KEY es obligatoria en producción (base64 de 32 bytes: openssl rand -base64 32)');
   if (cvKey && !isBase64Key32(cvKey)) errors.push('CV_ENCRYPTION_KEY debe ser base64 de exactamente 32 bytes (openssl rand -base64 32)');
 
+  const dbSsl = bool(raw, 'DB_SSL');
+  const dbSslCa = str(raw, 'DB_SSL_CA');
+  if (dbSslCa && !dbSslCa.includes('BEGIN CERTIFICATE')) errors.push('DB_SSL_CA debe ser un certificado en formato PEM (-----BEGIN CERTIFICATE-----)');
+
   const captcha = bool(raw, 'CAPTCHA_ENABLED');
   if (captcha && !str(raw, 'CAPTCHA_SECRET')) errors.push('CAPTCHA_SECRET es obligatoria cuando CAPTCHA_ENABLED=true');
 
@@ -125,6 +133,8 @@ export function validateEnv(raw: Raw): AppEnv {
     DB_USER: str(raw, 'DB_USER', 'gg_postulantes'),
     DB_PASSWORD: str(raw, 'DB_PASSWORD'),
     DB_NAME: str(raw, 'DB_NAME', 'gg_postulantes'),
+    DB_SSL: dbSsl,
+    DB_SSL_CA: dbSslCa,
     DB_SYNCHRONIZE: dbSync,
     SEED_ON_BOOT: seed,
     JWT_SECRET: jwtSecret,

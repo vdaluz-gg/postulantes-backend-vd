@@ -33,6 +33,22 @@ describe('validateEnv', () => {
     expect(validateEnv({ ...base, FORCE_HTTPS: 'true', TRUST_PROXY: '1' }).FORCE_HTTPS).toBe(true);
   });
 
+  describe('TLS hacia la base de datos', () => {
+    it('viene apagado: la base de local (Docker) no usa TLS', () => {
+      const env = validateEnv(base);
+      expect(env.DB_SSL).toBe(false);
+      expect(env.DB_SSL_CA).toBe('');
+    });
+    it('se enciende con DB_SSL=true y admite un certificado propio', () => {
+      const ca = '-----BEGIN CERTIFICATE-----\nabc\n-----END CERTIFICATE-----';
+      expect(validateEnv({ ...base, DB_SSL: 'true' }).DB_SSL).toBe(true);
+      expect(validateEnv({ ...base, DB_SSL: 'true', DB_SSL_CA: ca }).DB_SSL_CA).toBe(ca);
+    });
+    it('DB_SSL_CA tiene que ser un certificado PEM', () => {
+      expect(() => validateEnv({ ...base, DB_SSL: 'true', DB_SSL_CA: 'cualquier-cosa' })).toThrow(/DB_SSL_CA/);
+    });
+  });
+
   describe('captcha', () => {
     it('viene apagado: en local no se pide nada', () => {
       expect(validateEnv(base).CAPTCHA_ENABLED).toBe(false);
