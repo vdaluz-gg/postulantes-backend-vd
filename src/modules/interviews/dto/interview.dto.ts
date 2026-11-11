@@ -2,7 +2,7 @@ import { PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsBoolean, IsIn, IsInt, IsISO8601, IsNotEmpty, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
-import { TrimString } from '../../../common/validators/ar-validators.decorators';
+import { SanitizeText } from '../../../common/validators/ar-validators.decorators';
 import { CLOSING_INTERVIEW_STATUSES, Interview, INTERVIEW_STATUSES, InterviewStatus } from '../entities/interview.entity';
 import { InterviewRoom } from '../entities/interview-room.entity';
 
@@ -13,7 +13,7 @@ export const MAX_INTERVIEW_MINUTES = 180;
 // ---------- Salas ----------
 
 export class CreateRoomDto {
-  @TrimString()
+  @SanitizeText()
   @IsString()
   @IsNotEmpty()
   @MaxLength(120)
@@ -23,7 +23,7 @@ export class CreateRoomDto {
   zoneId: string;
 
   @IsOptional()
-  @TrimString()
+  @SanitizeText()
   @IsString()
   @MaxLength(240)
   address?: string | null;

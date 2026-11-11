@@ -1,5 +1,6 @@
 import { Transform } from 'class-transformer';
 import { registerDecorator, ValidationOptions } from 'class-validator';
+import { sanitizeText, SanitizeOptions } from './sanitize';
 import {
   normalizeCuil,
   normalizeDni,
@@ -42,6 +43,12 @@ export const IsCuil = (o?: ValidationOptions) => rule('cuil', validateCuil, o);
 
 /** Recorta espacios de los extremos. */
 export const TrimString = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() : value));
+/**
+ * Texto libre sin HTML, sin caracteres de control ni invisibles y con los espacios arreglados (también recorta).
+ * En un arreglo de textos limpia cada elemento. Ver sanitizeText.
+ */
+export const SanitizeText = (options?: SanitizeOptions) =>
+  Transform(({ value }) => (Array.isArray(value) ? value.map((v) => sanitizeText(v, options)) : sanitizeText(value, options)));
 /** Mail en minúsculas y sin espacios. */
 export const NormalizeEmail = () => Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value));
 /** DNI solo con dígitos, pero únicamente si era válido: un dato inválido no se "arregla" en silencio. */

@@ -1,6 +1,6 @@
 import { IsIn, IsObject, IsOptional, IsString, IsUUID, Matches, MaxLength } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
-import { TrimString } from '../../../common/validators/ar-validators.decorators';
+import { SanitizeText } from '../../../common/validators/ar-validators.decorators';
 import { CandidateContactDto } from '../../candidates/dto/candidate-contact.dto';
 import { maskedCandidateIdentity } from '../../candidates/dto/candidate.dto';
 import type { ApplicationAnswer } from '../../site-config/site-config.rules';
@@ -42,7 +42,7 @@ export class UpdateApplicationStatusDto {
 
   /** Nota interna: no la ve el postulante. */
   @IsOptional()
-  @TrimString()
+  @SanitizeText({ multiline: true })
   @IsString()
   @MaxLength(500)
   note?: string;

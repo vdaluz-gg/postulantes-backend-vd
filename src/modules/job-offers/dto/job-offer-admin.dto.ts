@@ -19,29 +19,29 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
-import { TrimString } from '../../../common/validators/ar-validators.decorators';
+import { SanitizeText, TrimString } from '../../../common/validators/ar-validators.decorators';
 import { JobOffer, OFFER_STATUSES, OfferInternalData, OfferStatus } from '../entities/job-offer.entity';
 
 /** Ficha interna de la búsqueda (solo backoffice). */
 export class OfferInternalDto implements OfferInternalData {
-  @IsOptional() @IsString() @MaxLength(200) client?: string;
-  @IsOptional() @IsString() @MaxLength(200) managingCompany?: string;
-  @IsOptional() @IsString() @MaxLength(200) businessArea?: string;
+  @IsOptional() @SanitizeText() @IsString() @MaxLength(200) client?: string;
+  @IsOptional() @SanitizeText() @IsString() @MaxLength(200) managingCompany?: string;
+  @IsOptional() @SanitizeText() @IsString() @MaxLength(200) businessArea?: string;
   @IsOptional() @IsInt() positionId?: number;
-  @IsOptional() @IsString() @MaxLength(100) type?: string;
-  @IsOptional() @IsString() @MaxLength(100) scope?: string;
-  @IsOptional() @IsString() @MaxLength(50) priority?: string;
+  @IsOptional() @SanitizeText() @IsString() @MaxLength(100) type?: string;
+  @IsOptional() @SanitizeText() @IsString() @MaxLength(100) scope?: string;
+  @IsOptional() @SanitizeText() @IsString() @MaxLength(50) priority?: string;
   @IsOptional() @IsInt() searchTypeId?: number;
   @IsOptional() @IsInt() modalityId?: number;
   @IsOptional() @IsInt() hierarchyId?: number;
-  @IsOptional() @IsString() @MaxLength(255) collectiveAgreement?: string;
-  @IsOptional() @IsString() @MaxLength(255) branch?: string;
-  @IsOptional() @IsString() @MaxLength(100) category?: string;
+  @IsOptional() @SanitizeText() @IsString() @MaxLength(255) collectiveAgreement?: string;
+  @IsOptional() @SanitizeText() @IsString() @MaxLength(255) branch?: string;
+  @IsOptional() @SanitizeText() @IsString() @MaxLength(100) category?: string;
   @IsOptional() @IsBoolean() experienceRequired?: boolean;
   @IsOptional() @IsBoolean() reinstatableDismissal?: boolean;
   @IsOptional() @IsBoolean() requiresUniform?: boolean;
   @IsOptional() @IsBoolean() preEmploymentExam?: boolean;
-  @IsOptional() @IsString() @MaxLength(1000) clientNotes?: string;
+  @IsOptional() @SanitizeText({ multiline: true }) @IsString() @MaxLength(1000) clientNotes?: string;
 }
 
 const CODE = /^[A-Za-z0-9_-]{1,40}$/;
@@ -50,11 +50,11 @@ export class CreateJobOfferDto {
   @Matches(CODE, { message: 'code admite letras, números, guion y guion bajo (hasta 40)' })
   code: string;
 
-  @TrimString() @IsString() @IsNotEmpty() @MaxLength(200) title: string;
-  @TrimString() @IsString() @IsNotEmpty() @MaxLength(5000) description: string;
+  @SanitizeText() @IsString() @IsNotEmpty() @MaxLength(200) title: string;
+  @SanitizeText({ multiline: true }) @IsString() @IsNotEmpty() @MaxLength(5000) description: string;
   @IsUUID() zoneId: string;
-  @TrimString() @IsString() @IsNotEmpty() @MaxLength(80) area: string;
-  @TrimString() @IsString() @IsNotEmpty() @MaxLength(160) schedule: string;
+  @SanitizeText() @IsString() @IsNotEmpty() @MaxLength(80) area: string;
+  @SanitizeText() @IsString() @IsNotEmpty() @MaxLength(160) schedule: string;
 
   /** AAAA-MM-DD. Si falta, hoy. */
   @IsOptional()
@@ -62,12 +62,12 @@ export class CreateJobOfferDto {
   @IsISO8601({ strict: true })
   publishedAt?: string;
 
-  @IsArray() @ArrayMaxSize(30) @IsString({ each: true }) @MaxLength(200, { each: true }) requirements: string[];
-  @IsArray() @ArrayMaxSize(30) @IsString({ each: true }) @MaxLength(200, { each: true }) benefits: string[];
+  @SanitizeText() @IsArray() @ArrayMaxSize(30) @IsString({ each: true }) @MaxLength(200, { each: true }) requirements: string[];
+  @SanitizeText() @IsArray() @ArrayMaxSize(30) @IsString({ each: true }) @MaxLength(200, { each: true }) benefits: string[];
 
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(1000) vacancies?: number;
   @IsOptional() @Type(() => Number) @IsNumber() @Min(0) salary?: number | null;
-  @IsOptional() @TrimString() @IsString() @MaxLength(240) address?: string | null;
+  @IsOptional() @SanitizeText() @IsString() @MaxLength(240) address?: string | null;
   @IsOptional() @Type(() => Number) @IsNumber() @Min(-90) @Max(90) latitude?: number | null;
   @IsOptional() @Type(() => Number) @IsNumber() @Min(-180) @Max(180) longitude?: number | null;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(500) radiusKm?: number;

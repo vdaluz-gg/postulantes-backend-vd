@@ -12,6 +12,7 @@ import {
   NormalizeEmail,
   NormalizeWhatsapp,
   TrimString,
+  SanitizeText,
 } from '../../../common/validators/ar-validators.decorators';
 
 /**
@@ -63,7 +64,7 @@ export class CandidateContactDto {
 
   /** Puesto al que aspira. */
   @IsOptional()
-  @TrimString()
+  @SanitizeText()
   @IsString()
   @MaxLength(160)
   position?: string | null;
