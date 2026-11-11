@@ -7,7 +7,8 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:?definí DB_PASSWORD en .env}
       POSTGRES_DB: ${DB_NAME:-gg_postulantes}
     ports:
-      - "${DB_PORT:-5432}:5432"
+      # Solo desde esta máquina (para herramientas como DBeaver). Que no quede abierta a la red.
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
