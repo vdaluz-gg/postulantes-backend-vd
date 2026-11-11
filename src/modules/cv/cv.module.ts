@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CandidatesModule } from '../candidates/candidates.module';
 import { Zone } from '../zones/entities/zone.entity';
+import { CvCleanupService } from './cv-cleanup.service';
 import { CvController } from './cv.controller';
 import { CvService } from './cv.service';
 import { CvDocument } from './entities/cv-document.entity';
@@ -13,7 +14,7 @@ import { TextCvReader } from './text-cv-reader';
   controllers: [CvController],
   // TextCvReader lee el texto del archivo y busca los datos con reglas. Para usar una IA, alcanza con otra clase
   // que cumpla CvReader en este `useClass`; el servicio y el controlador no cambian.
-  providers: [CvService, { provide: CV_READER, useClass: TextCvReader }],
+  providers: [CvService, CvCleanupService, { provide: CV_READER, useClass: TextCvReader }],
   exports: [TypeOrmModule],
 })
 export class CvModule {}

@@ -33,6 +33,19 @@ describe('validateEnv', () => {
     expect(validateEnv({ ...base, FORCE_HTTPS: 'true', TRUST_PROXY: '1' }).FORCE_HTTPS).toBe(true);
   });
 
+  describe('limpieza de CV sin postulante', () => {
+    it('viene apagada fuera de producción (nadie pierde archivos mientras prueba) y encendida en producción', () => {
+      expect(validateEnv(base).CV_CLEANUP_ENABLED).toBe(false);
+      expect(validateEnv(base).CV_ORPHAN_TTL_HOURS).toBe(24);
+      expect(validateEnv({ ...base, CV_CLEANUP_ENABLED: 'true' }).CV_CLEANUP_ENABLED).toBe(true);
+    });
+
+    it('el plazo es un entero de horas, de 1 a 720', () => {
+      expect(validateEnv({ ...base, CV_ORPHAN_TTL_HOURS: '72' }).CV_ORPHAN_TTL_HOURS).toBe(72);
+      for (const bad of ['0', '721', 'mucho', '1.5']) expect(() => validateEnv({ ...base, CV_ORPHAN_TTL_HOURS: bad })).toThrow(/CV_ORPHAN_TTL_HOURS/);
+    });
+  });
+
   describe('CV_ENCRYPTION_KEY (cifrado de los CV guardados)', () => {
     const key = Buffer.alloc(32, 7).toString('base64');
 
@@ -98,6 +111,8 @@ describe('validateEnv', () => {
 
     it('acepta una configuración completa', () => {
       expect(validateEnv(prod).NODE_ENV).toBe('production');
+      expect(validateEnv(prod).CV_CLEANUP_ENABLED).toBe(true); // la limpieza de CV sin postulante viene encendida
+      expect(validateEnv({ ...prod, CV_CLEANUP_ENABLED: 'false' }).CV_CLEANUP_ENABLED).toBe(false);
     });
 
     it.each(['JWT_SECRET', 'ADMIN_REGISTRATION_KEY', 'DB_PASSWORD'])('rechaza el valor de ejemplo de %s', (key) => {
