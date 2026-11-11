@@ -1,5 +1,6 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { redact } from '../utils/redact';
 
 export interface ErrorBody {
   statusCode: number;
@@ -47,7 +48,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
       } else message = exception.message;
     } else {
       const err = exception instanceof Error ? exception : new Error(String(exception));
-      this.logger.error(`${req.url}: ${err.message}`, err.stack);
+      // La ruta va sin query (puede traer un DNI o un mail de una búsqueda) y todo pasa por redact: el mensaje de un
+      // error de la base o de un proveedor puede incluir datos personales o secretos.
+      const route = (req.url ?? '').split('?')[0];
+      this.logger.error(`${redact(route)}: ${redact(err.message)}`, err.stack ? redact(err.stack) : undefined);
     }
 
     const body: ErrorBody = {

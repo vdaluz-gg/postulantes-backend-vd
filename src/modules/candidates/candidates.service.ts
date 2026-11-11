@@ -1,4 +1,5 @@
 import { BadRequestException, ConflictException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { errorForLog } from '../../common/utils/redact';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
 import { Page } from '../../common/pagination';
@@ -210,7 +211,7 @@ export class CandidatesService {
     // Los archivos se borran después de confirmar la base: si algo falla acá queda un archivo huérfano
     // (se avisa en el log) pero nunca un registro apuntando a un archivo inexistente.
     for (const cv of cvs) {
-      await this.storage.remove(cv.storageKey).catch((e: unknown) => this.logger.warn(`No se pudo borrar el archivo ${cv.storageKey}: ${String(e)}`));
+      await this.storage.remove(cv.storageKey).catch((e: unknown) => this.logger.warn(`No se pudo borrar el archivo ${cv.storageKey}: ${errorForLog(e)}`));
     }
   }
 }

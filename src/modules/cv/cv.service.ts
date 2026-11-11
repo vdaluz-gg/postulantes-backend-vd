@@ -1,4 +1,5 @@
 import { BadGatewayException, BadRequestException, Inject, Injectable, Logger, UnsupportedMediaTypeException } from '@nestjs/common';
+import { errorForLog } from '../../common/utils/redact';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'crypto';
 import { Repository } from 'typeorm';
@@ -44,7 +45,7 @@ export class CvService {
     try {
       const extracted = await this.reader.read({ buffer: file.buffer, mimeType: type.mimeType, fileName }).catch((e: unknown) => {
         // El detalle del proveedor queda en el log del servidor; al cliente no le llega.
-        this.logger.error(`El lector de CV falló: ${e instanceof Error ? e.message : String(e)}`);
+        this.logger.error(`El lector de CV falló: ${errorForLog(e)}`);
         throw new BadGatewayException('No pudimos leer tu CV. Completá los datos a mano');
       });
 

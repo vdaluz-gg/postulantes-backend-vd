@@ -1,4 +1,5 @@
 import { BadGatewayException, Inject, Injectable, Logger, NotFoundException, NotImplementedException } from '@nestjs/common';
+import { errorForLog } from '../../common/utils/redact';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Candidate } from '../candidates/entities/candidate.entity';
@@ -68,7 +69,7 @@ export class IdentityService {
       await this.candidates.save(candidate);
       return toDto(saved);
     } catch (e) {
-      this.logger.error(`Falló la validación de identidad (${this.provider.name}): ${e instanceof Error ? e.message : String(e)}`);
+      this.logger.error(`Falló la validación de identidad (${this.provider.name}): ${errorForLog(e)}`);
       // Queda constancia del intento, sin copiar el detalle del proveedor (puede traer datos sensibles).
       await this.verifications.save(
         this.verifications.create({ candidateId, kind, provider: this.provider.name, result: 'error', score: null, reason: 'Error del proveedor' }),

@@ -1,4 +1,4 @@
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, Logger } from '@nestjs/common';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { Candidate } from '../src/modules/candidates/entities/candidate.entity';
@@ -100,6 +100,7 @@ describe('Validación de identidad cuando el proveedor falla (integración)', ()
       },
     };
     const { app, dataSource } = await createTestApp((b) => b.overrideProvider(IDENTITY_PROVIDER).useValue(failing));
+    const logged = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     try {
       const token = await adminToken(app, dataSource);
       const created = await request(app.getHttpServer()).post('/api/v1/backoffice/candidates').set(bearer(token)).send(person).expect(201);
@@ -111,7 +112,12 @@ describe('Validación de identidad cuando el proveedor falla (integración)', ()
       expect(rows).toHaveLength(1);
       expect(rows[0]).toEqual(expect.objectContaining({ result: 'error', provider: 'renaper-sid' }));
       expect(rows[0].reason).not.toMatch(/abc123|10\.0\.0\.9/);
+      // El error se registra para poder investigarlo, pero sin el secreto que trae el mensaje del proveedor.
+      const log = logged.mock.calls.map((c) => c.join(' ')).join('\n');
+      expect(log).toContain('invalid_client');
+      expect(log).not.toContain('abc123');
     } finally {
+      logged.mockRestore();
       await app.close();
     }
   });
