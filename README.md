@@ -155,6 +155,45 @@ Datos **de ejemplo** que pasan la validación (no son personas reales):
 
 Los pedidos tienen límite por minuto: si recibís un `429`, esperá un momento.
 
+## Seguridad
+
+**Para probar en local no hace falta configurar nada de esto:** todo lo que endurece el entorno viene apagado en el
+`.env.example` y se enciende con una variable. Un test (`src/config/env-example.spec.ts`) comprueba que copiar el
+`.env.example` sigue arrancando.
+
+**Siempre activo (también en local)**
+- Todas las rutas exigen sesión de administrador salvo las marcadas `@Public()`; un test recorre las rutas y falla si
+  una nueva queda abierta sin querer.
+- Validación estricta de cada pedido (se rechazan los campos que no figuran en el contrato) y límite de tamaño del cuerpo (100 kB).
+- Consultas a la base solo con parámetros; un test falla si alguien arma SQL concatenando texto.
+- Los textos libres se limpian de HTML y caracteres invisibles antes de guardarse.
+- Los listados del backoffice enmascaran el DNI, el CUIL y el WhatsApp (`****2907`); el detalle de cada persona los muestra completos.
+- Los logs no llevan datos personales ni secretos, y los errores nunca devuelven detalles internos.
+- Límite de pedidos por IP, cabeceras de seguridad (`helmet`, sin caché de las respuestas) y CORS por lista blanca.
+- Solo se aceptan CV en PDF, DOC o DOCX (se verifica el contenido, no la extensión), de hasta 5 MB.
+
+**Para producción (apagado por defecto en local)**
+
+| Variable | Qué hace |
+|----------|----------|
+| `NODE_ENV=production` | El arranque falla si quedan valores de ejemplo (`cambiar-…`), si `CORS_ORIGINS` no es https o si falta `CV_ENCRYPTION_KEY`. |
+| `CV_ENCRYPTION_KEY` | Cifra los CV guardados (AES-256-GCM). `openssl rand -base64 32`. **Si se pierde, los CV cifrados no se recuperan.** |
+| `TRUST_PROXY`, `FORCE_HTTPS` | Detrás de un proxy o balanceador: IP real para el límite de pedidos y redirección de http a https. |
+| `DB_SSL`, `DB_SSL_CA` | TLS hacia PostgreSQL, verificando el certificado. |
+| `CV_CLEANUP_ENABLED`, `CV_ORPHAN_TTL_HOURS` | Borra los CV que nunca se asociaron a una postulación (encendido solo en producción). |
+| `CAPTCHA_ENABLED`, `CAPTCHA_SECRET` | Pide un token anti-robots (`X-Captcha-Token`) al postularse y al subir un CV. Hoy hay un verificador de prueba (token `captcha-ok`): antes de producción hay que conectar un proveedor real. |
+
+**Pendiente antes de recibir datos reales**
+- Antivirus para los CV: el punto de enganche existe (`FileScanner`) pero hoy no analiza nada.
+- Proveedor de captcha real (y sumarlo en el front).
+- Cifrado de DNI, WhatsApp y mail en la base: hoy están en texto plano. Cifrarlos impide buscar por una parte del valor; hay que decidir
+  si se acepta (con un índice aparte solo para la búsqueda exacta).
+- Contador de pedidos compartido (Redis) si hay más de una instancia de la API.
+- Migraciones de base de datos (hoy el esquema se crea con `DB_SYNCHRONIZE`, solo para desarrollo).
+
+Cada pull request corre un chequeo (`.github/workflows/seguridad.yml`): tests, `npm audit`, búsqueda de secretos
+(gitleaks) y escaneo de la imagen de Docker. Dependabot propone las actualizaciones cada semana.
+
 ## Ramas
 
 | Rama | Contenido |
