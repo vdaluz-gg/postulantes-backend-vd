@@ -117,6 +117,7 @@ export class CandidatesService {
         clauses.push('c.dni LIKE :digits', 'c.whatsapp LIKE :digits');
         params.digits = `%${digits}%`;
       }
+      // sql-seguro: `clauses` son fragmentos fijos de arriba; el texto buscado va solo en `params` (parametrizado).
       qb.andWhere(`(${clauses.join(' OR ')})`, params);
     }
     if (query.zoneId) qb.andWhere('c.zoneId = :zoneId', { zoneId: query.zoneId });
