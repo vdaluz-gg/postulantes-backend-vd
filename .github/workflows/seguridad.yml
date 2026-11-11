@@ -21,7 +21,7 @@ jobs:
     name: Tests y tipos
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -34,7 +34,7 @@ jobs:
     name: Librerías con vulnerabilidades (producción)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -47,7 +47,7 @@ jobs:
     name: Secretos en el repositorio
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # historial completo: un secreto borrado después sigue estando en commits viejos
       - name: Buscar secretos con gitleaks
@@ -59,7 +59,7 @@ jobs:
     name: Imagen de Docker con vulnerabilidades
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Construir la imagen
         run: docker build -t postulantes-api:ci .
       - name: Buscar vulnerabilidades altas o críticas con Trivy
