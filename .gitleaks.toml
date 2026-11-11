@@ -1,0 +1,16 @@
+# Configuración de gitleaks (busca secretos en el código y en el historial de git).
+title = "Postulantes · backend"
+
+[extend]
+# Se parte de las reglas por defecto (claves de AWS, tokens, JWT, contraseñas en URLs, etc.).
+useDefault = true
+
+[allowlist]
+description = "Valores de ejemplo que no son secretos reales"
+paths = [
+  # El .env.example solo trae valores de relleno ("cambiar-...").
+  '''(^|/)\.env\.example$''',
+  # Los tests usan claves y contraseñas inventadas para armar la app de prueba.
+  '''^test/''',
+  '''\.spec\.ts$''',
+]

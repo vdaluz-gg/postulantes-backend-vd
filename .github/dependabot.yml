@@ -1,0 +1,35 @@
+# Dependabot abre pull requests con las actualizaciones (y con las correcciones de seguridad) de lo que usa el proyecto.
+version: 2
+updates:
+  # Librerías de Node
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      nest:
+        patterns: ['@nestjs/*']
+      herramientas-de-desarrollo:
+        dependency-type: development
+    commit-message:
+      prefix: 'chore(deps)'
+
+  # Imagen base del Dockerfile (node:22-alpine)
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: 'chore(docker)'
+
+  # Las acciones que usa el CI
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: 'chore(ci)'

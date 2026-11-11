@@ -1,0 +1,68 @@
+name: Calidad y seguridad
+
+# Corre en cada pull request y en cada push a las ramas principales. Además una vez por semana: aparecen
+# vulnerabilidades nuevas en librerías o en la imagen base aunque el código no haya cambiado.
+on:
+  pull_request:
+  push:
+    branches: [main, test, prod]
+  schedule:
+    - cron: '0 9 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pruebas:
+    name: Tests y tipos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  dependencias:
+    name: Librerías con vulnerabilidades (producción)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      # Falla con vulnerabilidades altas o críticas. Las moderadas se ven en `npm audit` pero no frenan el pase.
+      - run: npm audit --omit=dev --audit-level=high
+
+  secretos:
+    name: Secretos en el repositorio
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # historial completo: un secreto borrado después sigue estando en commits viejos
+      - name: Buscar secretos con gitleaks
+        run: |
+          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.24.2 \
+            detect --source=/repo --config=/repo/.gitleaks.toml --redact --no-banner --verbose
+
+  imagen:
+    name: Imagen de Docker con vulnerabilidades
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir la imagen
+        run: docker build -t postulantes-api:ci .
+      - name: Buscar vulnerabilidades altas o críticas con Trivy
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.58.1 \
+            image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress postulantes-api:ci
