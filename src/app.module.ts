@@ -5,6 +5,7 @@ import { AppConfigModule, APP_ENV } from './config/app-config.module';
 import { AppEnv } from './config/env.validation';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { AuthRequiredGuard } from './modules/auth/guards/auth-required.guard';
 import { CandidatesModule } from './modules/candidates/candidates.module';
 import { CvModule } from './modules/cv/cv.module';
 import { ApplicationsModule } from './modules/applications/applications.module';
@@ -42,6 +43,10 @@ import { HealthController } from './modules/health/health.controller';
     SiteConfigModule,
   ],
   controllers: [HealthController],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [
+    // El orden importa: primero el límite de pedidos, después la autenticación (denegar por defecto).
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: AuthRequiredGuard },
+  ],
 })
 export class AppModule {}

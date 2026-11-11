@@ -3,8 +3,10 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { ApplicationsService } from './applications.service';
 import { ApplyDto, ApplyResponseDto, TrackingDto } from './dto/application.dto';
+import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('Postulante')
+@Public()
 @Controller('applications')
 export class ApplicationsController {
   constructor(private readonly service: ApplicationsService) {}

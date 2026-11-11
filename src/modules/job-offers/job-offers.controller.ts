@@ -3,8 +3,10 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ListJobOffersQueryDto, NearbyJobOffersQueryDto } from './dto/job-offer-query.dto';
 import { OfferFiltersDto, PublicJobPostingDto, PublicOffersPageDto } from './dto/public-job-posting.dto';
 import { JobOffersService } from './job-offers.service';
+import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('Ofertas (público)')
+@Public()
 @Controller('job-offers')
 export class JobOffersController {
   constructor(private readonly service: JobOffersService) {}

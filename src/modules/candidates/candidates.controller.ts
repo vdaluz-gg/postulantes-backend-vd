@@ -2,8 +2,10 @@ import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CandidateValidationService } from './candidate-validation.service';
 import { ValidateCandidateDto, ValidateCandidateResponse } from './dto/validate-candidate.dto';
+import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('Postulante')
+@Public()
 @Controller('candidates')
 export class CandidatesController {
   constructor(private readonly validation: CandidateValidationService) {}

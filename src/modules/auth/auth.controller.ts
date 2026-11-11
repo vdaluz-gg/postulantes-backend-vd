@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 import { AdminOnly } from './decorators/admin-only.decorator';
 import { CurrentAdmin } from './decorators/current-admin.decorator';
 import { AdminProfileDto, LoginDto, LoginResponseDto, RegisterAdminDto } from './dto/auth.dto';
+import { Public } from './decorators/public.decorator';
 
 /** Intentos por minuto y por IP en las rutas sensibles. */
 const SENSITIVE = { default: { limit: 10, ttl: 60_000 } };
@@ -14,6 +15,7 @@ const SENSITIVE = { default: { limit: 10, ttl: 60_000 } };
 export class AuthController {
   constructor(private readonly service: AuthService) {}
 
+  @Public()
   @Post('register')
   @Throttle(SENSITIVE)
   @ApiOperation({ summary: 'Alta de administrador (requiere la clave de alta)' })
@@ -21,6 +23,7 @@ export class AuthController {
     return this.service.register(dto);
   }
 
+  @Public()
   @Post('login')
   @HttpCode(200)
   @Throttle(SENSITIVE)

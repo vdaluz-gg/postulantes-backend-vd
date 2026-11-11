@@ -4,8 +4,10 @@ import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { CV_MAX_BYTES } from './cv-file-type';
 import { CvService, CvUploadResult } from './cv.service';
+import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('Postulante')
+@Public()
 @Controller('cv')
 export class CvController {
   constructor(private readonly service: CvService) {}

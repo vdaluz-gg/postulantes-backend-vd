@@ -2,8 +2,10 @@ import { Body, Controller, Headers, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ConsentsService } from './consents.service';
 import { RecordConsentsDto } from './dto/consent.dto';
+import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('Postulante')
+@Public()
 @Controller('consents')
 export class ConsentsController {
   constructor(private readonly service: ConsentsService) {}

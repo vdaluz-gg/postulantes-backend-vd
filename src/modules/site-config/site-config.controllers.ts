@@ -5,6 +5,7 @@ import { CurrentAdmin } from '../auth/decorators/current-admin.decorator';
 import { AdminProfileDto } from '../auth/dto/auth.dto';
 import { SaveSiteConfigDto, SiteConfigDto } from './dto/site-config.dto';
 import { SiteConfigService } from './site-config.service';
+import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('Backoffice · Configuración de los portales')
 @AdminOnly()
@@ -33,6 +34,7 @@ export class BackofficeSiteConfigController {
 }
 
 @ApiTags('Configuración de los portales')
+@Public()
 @Controller('site-config')
 export class SiteConfigController {
   constructor(private readonly service: SiteConfigService) {}
