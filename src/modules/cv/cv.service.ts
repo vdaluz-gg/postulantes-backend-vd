@@ -1,4 +1,13 @@
-import { BadGatewayException, BadRequestException, Inject, Injectable, Logger, UnsupportedMediaTypeException } from '@nestjs/common';
+import {
+  BadGatewayException,
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+  UnprocessableEntityException,
+  UnsupportedMediaTypeException,
+} from '@nestjs/common';
 import { errorForLog } from '../../common/utils/redact';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'crypto';
@@ -10,6 +19,7 @@ import { Zone } from '../zones/entities/zone.entity';
 import { detectCvType, sanitizeFileName } from './cv-file-type';
 import { CvDocument } from './entities/cv-document.entity';
 import { CV_READER, CvReader } from './ports/cv-reader';
+import { FILE_SCANNER, FileScanner } from './ports/file-scanner';
 import { FILE_STORAGE, FileStorage } from './ports/file-storage';
 
 export interface CvUploadResult {
@@ -30,8 +40,21 @@ export class CvService {
     @InjectRepository(Zone) private readonly zones: Repository<Zone>,
     @Inject(FILE_STORAGE) private readonly storage: FileStorage,
     @Inject(CV_READER) private readonly reader: CvReader,
+    @Inject(FILE_SCANNER) private readonly scanner: FileScanner,
     private readonly validation: CandidateValidationService,
   ) {}
+
+  /** Analiza el archivo antes de guardarlo. Si el análisis falla no se acepta (falla cerrado); el detalle va al log. */
+  private async assertClean(buffer: Buffer, fileName: string): Promise<void> {
+    const result = await this.scanner.scan({ buffer, fileName }).catch((e: unknown) => {
+      this.logger.error(`Falló el análisis del archivo: ${errorForLog(e)}`);
+      throw new ServiceUnavailableException('No pudimos analizar el archivo. Probá de nuevo más tarde');
+    });
+    if (!result.clean) {
+      this.logger.warn(`Archivo rechazado por el análisis de seguridad (${errorForLog(result.threat ?? 'amenaza sin nombre')})`);
+      throw new UnprocessableEntityException('El archivo no pasó el análisis de seguridad');
+    }
+  }
 
   async upload(file: Express.Multer.File | undefined): Promise<CvUploadResult> {
     if (!file?.buffer?.length) throw new BadRequestException('Adjuntá tu CV');
@@ -39,6 +62,7 @@ export class CvService {
     if (!type) throw new UnsupportedMediaTypeException('El archivo no es un PDF, DOC o DOCX válido');
 
     const fileName = sanitizeFileName(file.originalname ?? '');
+    await this.assertClean(file.buffer, fileName);
     const storageKey = `${randomUUID()}.${type.extension}`;
     await this.storage.save(storageKey, file.buffer);
 
