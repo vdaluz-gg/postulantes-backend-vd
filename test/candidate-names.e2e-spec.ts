@@ -172,8 +172,9 @@ describe('Nombre, apellido y CUIL del postulante (integración)', () => {
         .set(bearer(token))
         .query({ q: 'juan@' })
         .expect(200);
+      // En el listado el CUIL va tapado (lleva el DNI adentro); el detalle lo trae completo.
       expect(list.body.items[0]).toEqual(
-        expect.objectContaining({ firstName: 'Juan', lastName: 'Pérez', cuil: '20-30111222-0' }),
+        expect.objectContaining({ firstName: 'Juan', lastName: 'Pérez', cuil: '**-****1222-*' }),
       );
       const detail = await http().get(`/api/v1/backoffice/candidates/${id}`).set(bearer(token)).expect(200);
       expect(detail.body).toEqual(
@@ -218,13 +219,15 @@ describe('Nombre, apellido y CUIL del postulante (integración)', () => {
 
     it('la lista de postulaciones trae nombre, apellido y CUIL del postulante', async () => {
       const res = await http().get('/api/v1/backoffice/applications').set(bearer(token)).expect(200);
-      const item = res.body.items.find((a: { candidate: { dni: string } }) => a.candidate.dni === '40123456');
+      const item = res.body.items.find((a: { candidate: { fullName: string } }) => a.candidate.fullName === 'Lucía Fernández');
+      // DNI y CUIL tapados en el listado de postulaciones.
       expect(item.candidate).toEqual(
         expect.objectContaining({
           fullName: 'Lucía Fernández',
           firstName: 'Lucía',
           lastName: 'Fernández',
-          cuil: '27-40123456-5',
+          dni: '****3456',
+          cuil: '**-****3456-*',
         }),
       );
     });

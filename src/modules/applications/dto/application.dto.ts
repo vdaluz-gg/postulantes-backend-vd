@@ -2,7 +2,7 @@ import { IsIn, IsObject, IsOptional, IsString, IsUUID, Matches, MaxLength } from
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import { TrimString } from '../../../common/validators/ar-validators.decorators';
 import { CandidateContactDto } from '../../candidates/dto/candidate-contact.dto';
-import { candidateIdentity } from '../../candidates/dto/candidate.dto';
+import { maskedCandidateIdentity } from '../../candidates/dto/candidate.dto';
 import type { ApplicationAnswer } from '../../site-config/site-config.rules';
 import { PUBLIC_CANDIDATE_CHANNELS } from '../../candidates/entities/candidate.entity';
 import { SESSION_ID_PATTERN } from '../../consents/dto/consent.dto';
@@ -118,7 +118,7 @@ export const offerRef = (a: Application): { ref: string; title: string } | null 
 export const toSummary = (a: Application): ApplicationSummaryDto => ({
   id: a.id,
   trackingCode: a.trackingCode,
-  candidate: { id: a.candidate.id, ...candidateIdentity(a.candidate), dni: a.candidate.dni },
+  candidate: { id: a.candidate.id, ...maskedCandidateIdentity(a.candidate) },
   position: a.position,
   jobOfferCode: a.jobOffer?.code ?? null,
   status: a.status,

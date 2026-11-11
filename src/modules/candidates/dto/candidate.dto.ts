@@ -1,6 +1,7 @@
 import { PartialType } from '@nestjs/swagger';
 import { IsIn, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
+import { maskCuil, maskDni, maskWhatsapp } from '../../../common/utils/mask';
 import { formatCuil } from '../../../common/validators/ar-validators';
 import { TrimString } from '../../../common/validators/ar-validators.decorators';
 import { splitFullName } from '../candidate-names';
@@ -99,6 +100,12 @@ export const candidateIdentity = (c: Candidate) => ({
   cuil: c.cuil ? formatCuil(c.cuil) : null,
 });
 
+/** Datos de identificación con DNI y CUIL tapados, para listados (el detalle de la persona los muestra completos). */
+export const maskedCandidateIdentity = (c: Candidate) => {
+  const identity = candidateIdentity(c);
+  return { ...identity, cuil: maskCuil(identity.cuil), dni: maskDni(c.dni) };
+};
+
 export const toCandidateDto = (c: Candidate): CandidateDto => ({
   id: c.id,
   ...candidateIdentity(c),
@@ -117,4 +124,11 @@ export const toCandidateDto = (c: Candidate): CandidateDto => ({
   identityStatus: c.identityStatus,
   createdAt: c.createdAt,
   updatedAt: c.updatedAt,
+});
+
+/** Para los listados: igual que toCandidateDto pero con DNI, CUIL y WhatsApp enmascarados. */
+export const toCandidateListItemDto = (c: Candidate): CandidateDto => ({
+  ...toCandidateDto(c),
+  ...maskedCandidateIdentity(c),
+  whatsapp: maskWhatsapp(c.whatsapp),
 });

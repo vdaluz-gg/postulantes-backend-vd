@@ -50,9 +50,10 @@ describe('Reportería de postulaciones (integración)', () => {
       await http().post('/api/v1/applications').send(person(3, { offerCode: 'LOG7712093' })).expect(201);
       await http().post('/api/v1/applications').send(person(4)).expect(201);
       const list = await http().get('/api/v1/backoffice/applications').set(bearer(token)).query({ limit: 100 }).expect(200);
-      const byDni = (dni: string) => list.body.items.find((a: { candidate: { dni: string } }) => a.candidate.dni === dni).id;
-      await http().patch(`/api/v1/backoffice/applications/${byDni('32000001')}/status`).set(bearer(token)).send({ status: 'hired' }).expect(200);
-      await http().patch(`/api/v1/backoffice/applications/${byDni('32000002')}/status`).set(bearer(token)).send({ status: 'rejected' }).expect(200);
+      // El listado muestra el DNI tapado (solo los últimos 4 dígitos).
+      const byDni = (masked: string) => list.body.items.find((a: { candidate: { dni: string } }) => a.candidate.dni === masked).id;
+      await http().patch(`/api/v1/backoffice/applications/${byDni('****0001')}/status`).set(bearer(token)).send({ status: 'hired' }).expect(200);
+      await http().patch(`/api/v1/backoffice/applications/${byDni('****0002')}/status`).set(bearer(token)).send({ status: 'rejected' }).expect(200);
     });
 
     it('cuenta por estado, canal y oferta, y calcula la tasa de contratación', async () => {

@@ -22,6 +22,7 @@ import {
   ListCandidatesQueryDto,
   UpdateCandidateDto,
   toCandidateDto,
+  toCandidateListItemDto,
 } from './dto/candidate.dto';
 import { Candidate, CandidateChannel, CandidateSource } from './entities/candidate.entity';
 
@@ -128,7 +129,7 @@ export class CandidatesService {
       .skip((query.page - 1) * query.limit)
       .take(query.limit)
       .getManyAndCount();
-    return { items: rows.map(toCandidateDto), total, page: query.page, limit: query.limit };
+    return { items: rows.map(toCandidateListItemDto), total, page: query.page, limit: query.limit };
   }
 
   async findOne(id: string): Promise<CandidateDetailDto> {
