@@ -42,22 +42,22 @@
     "typeorm": "^0.3.31"
   },
   "devDependencies": {
-    "@nestjs/cli": "^11.0.24",
-    "@nestjs/testing": "^11.2.8",
-    "@types/bcryptjs": "^2.4.6",
+    "@nestjs/cli": "^12.0.12",
+    "@nestjs/testing": "^12.4.0",
+    "@types/bcryptjs": "^3.0.0",
     "@types/express": "^5.0.6",
-    "@types/jest": "^29.5.14",
+    "@types/jest": "^30.0.0",
     "@types/multer": "*",
-    "@types/node": "^22.0.0",
+    "@types/node": "^26.6.6",
     "@types/supertest": "*",
-    "jest": "^29.7.0",
+    "jest": "^30.5.2",
     "pg-mem": "^3.0.14",
     "prettier": "^3.9.10",
     "supertest": "*",
     "ts-jest": "^29.4.15",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "~5.9.3"
+    "typescript": "~7.0.2"
   },
   "overrides": {
     "multer": "^2.5.0"
