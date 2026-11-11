@@ -17,6 +17,22 @@ describe('validateEnv', () => {
     expect(env.corsOrigins).toEqual(['http://localhost:4200']);
   });
 
+  it('proxy y https forzado vienen apagados: no cambian nada al probar en local', () => {
+    const env = validateEnv(base);
+    expect(env.TRUST_PROXY).toBe(0);
+    expect(env.FORCE_HTTPS).toBe(false);
+  });
+
+  it('TRUST_PROXY es la cantidad de proxies delante de la API (entero de 0 a 10)', () => {
+    expect(validateEnv({ ...base, TRUST_PROXY: '1' }).TRUST_PROXY).toBe(1);
+    for (const bad of ['-1', '11', 'dos', '1.5']) expect(() => validateEnv({ ...base, TRUST_PROXY: bad })).toThrow(/TRUST_PROXY/);
+  });
+
+  it('FORCE_HTTPS exige TRUST_PROXY: sin saber que hay un proxy la API redirigiría en bucle', () => {
+    expect(() => validateEnv({ ...base, FORCE_HTTPS: 'true' })).toThrow(/FORCE_HTTPS.*TRUST_PROXY/);
+    expect(validateEnv({ ...base, FORCE_HTTPS: 'true', TRUST_PROXY: '1' }).FORCE_HTTPS).toBe(true);
+  });
+
   it('convierte tipos desde strings', () => {
     const env = validateEnv({ ...base, PORT: '4000', DB_SYNCHRONIZE: 'true', CORS_ORIGINS: 'http://a.com, http://b.com' });
     expect(env.PORT).toBe(4000);

@@ -15,6 +15,10 @@ export interface AppEnv {
   readonly UPLOAD_DIR: string;
   /** Pedidos por minuto y por IP. */
   readonly THROTTLE_LIMIT: number;
+  /** Cantidad de proxies delante de la API (0 = ninguno, como en local). */
+  readonly TRUST_PROXY: number;
+  /** Redirige http a https (requiere TRUST_PROXY). Apagado por defecto. */
+  readonly FORCE_HTTPS: boolean;
   readonly RENAPER_ENABLED: boolean;
   readonly RENAPER_BASE_URL: string;
   readonly RENAPER_CLIENT_ID: string;
@@ -71,6 +75,11 @@ export function validateEnv(raw: Raw): AppEnv {
     }
   }
 
+  const trustProxy = Number(str(raw, 'TRUST_PROXY', '0'));
+  if (!Number.isInteger(trustProxy) || trustProxy < 0 || trustProxy > 10) errors.push('TRUST_PROXY debe ser un entero entre 0 y 10');
+  const forceHttps = bool(raw, 'FORCE_HTTPS');
+  if (forceHttps && !(trustProxy > 0)) errors.push('FORCE_HTTPS requiere TRUST_PROXY: la API tiene que saber que hay un proxy que termina el https');
+
   const renaper = bool(raw, 'RENAPER_ENABLED');
   if (renaper) {
     for (const key of ['RENAPER_BASE_URL', 'RENAPER_CLIENT_ID', 'RENAPER_CLIENT_SECRET']) {
@@ -99,6 +108,8 @@ export function validateEnv(raw: Raw): AppEnv {
     ADMIN_REGISTRATION_KEY: registrationKey,
     UPLOAD_DIR: str(raw, 'UPLOAD_DIR', './uploads'),
     THROTTLE_LIMIT: Number(str(raw, 'THROTTLE_LIMIT', '120')) || 120,
+    TRUST_PROXY: trustProxy,
+    FORCE_HTTPS: forceHttps,
     RENAPER_ENABLED: renaper,
     RENAPER_BASE_URL: str(raw, 'RENAPER_BASE_URL'),
     RENAPER_CLIENT_ID: str(raw, 'RENAPER_CLIENT_ID'),
