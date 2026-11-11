@@ -41,6 +41,38 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ...base, NODE_ENV: 'production', SEED_ON_BOOT: 'true' })).toThrow(/SEED_ON_BOOT/);
   });
 
+  describe('en producción', () => {
+    const prod = {
+      ...base,
+      NODE_ENV: 'production',
+      JWT_SECRET: 'k8Zp2vQ9xLw4TnR7bYc1dFg6HjM3sUa0EeIoXz5',
+      ADMIN_REGISTRATION_KEY: 'alta-9fT2qLmX',
+      DB_PASSWORD: 'Pw-real-8sK2',
+      CORS_ORIGINS: 'https://portal.ejemplo.com',
+    };
+
+    it('acepta una configuración completa', () => {
+      expect(validateEnv(prod).NODE_ENV).toBe('production');
+    });
+
+    it.each(['JWT_SECRET', 'ADMIN_REGISTRATION_KEY', 'DB_PASSWORD'])('rechaza el valor de ejemplo de %s', (key) => {
+      expect(() => validateEnv({ ...prod, [key]: 'cambiar-por-un-valor-de-ejemplo-largo-1234' })).toThrow(new RegExp(`${key}.*ejemplo`));
+    });
+
+    it('en desarrollo sí deja usar los valores de ejemplo del .env.example', () => {
+      expect(() => validateEnv({ ...base, JWT_SECRET: 'cambiar-por-un-secreto-largo-de-al-menos-32-caracteres' })).not.toThrow();
+    });
+
+    it('exige que todos los orígenes del front sean https', () => {
+      expect(() => validateEnv({ ...prod, CORS_ORIGINS: 'https://a.com,http://b.com' })).toThrow(/CORS_ORIGINS.*https/);
+      expect(() => validateEnv({ ...prod, CORS_ORIGINS: undefined })).toThrow(/CORS_ORIGINS.*https/);
+    });
+
+    it('en desarrollo acepta orígenes http', () => {
+      expect(validateEnv({ ...base, CORS_ORIGINS: 'http://localhost:4200' }).corsOrigins).toEqual(['http://localhost:4200']);
+    });
+  });
+
   it('si RENAPER está activo exige sus credenciales', () => {
     expect(() => validateEnv({ ...base, RENAPER_ENABLED: 'true' })).toThrow(/RENAPER_BASE_URL/);
     expect(

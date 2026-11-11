@@ -27,6 +27,8 @@ const str = (raw: Raw, key: string, fallback = ''): string => {
   const v = raw[key];
   return v === undefined || v === null || String(v).trim() === '' ? fallback : String(v).trim();
 };
+/** Textos típicos de un valor sin completar. */
+const PLACEHOLDER = /cambiar|changeme|change-me/i;
 const bool = (raw: Raw, key: string): boolean => str(raw, key, 'false').toLowerCase() === 'true';
 
 /**
@@ -54,6 +56,20 @@ export function validateEnv(raw: Raw): AppEnv {
   if (production && dbSync) errors.push('DB_SYNCHRONIZE no puede ser true en producción: usá migraciones');
   if (production && seed) errors.push('SEED_ON_BOOT no puede ser true en producción');
   if (production && !str(raw, 'DB_PASSWORD')) errors.push('DB_PASSWORD es obligatoria en producción');
+
+  if (production) {
+    // El .env.example trae valores de ejemplo ("cambiar-…"): en producción no pueden quedar.
+    for (const key of ['JWT_SECRET', 'ADMIN_REGISTRATION_KEY', 'DB_PASSWORD']) {
+      if (PLACEHOLDER.test(str(raw, key))) errors.push(`${key} tiene el valor de ejemplo: generá uno propio`);
+    }
+    const origins = str(raw, 'CORS_ORIGINS')
+      .split(',')
+      .map((o) => o.trim())
+      .filter(Boolean);
+    if (!origins.length || origins.some((o) => !o.startsWith('https://'))) {
+      errors.push('CORS_ORIGINS es obligatoria en producción y todos los orígenes deben ser https://');
+    }
+  }
 
   const renaper = bool(raw, 'RENAPER_ENABLED');
   if (renaper) {
