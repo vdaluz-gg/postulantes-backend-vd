@@ -44,6 +44,40 @@ describe('AllExceptionsFilter', () => {
     expect(JSON.stringify(body)).not.toContain('10.0.0.5');
   });
 
+  describe('errores del cliente que no son excepciones de Nest (por ejemplo, los del lector de JSON)', () => {
+    const clientError = (status: number, message: string) => Object.assign(new Error(message), { status, statusCode: status, expose: true });
+
+    it('un cuerpo demasiado grande es un 413 con un mensaje genérico, no un 500', () => {
+      const { host, status, json } = hostWith('/api/v1/candidates/validate');
+      filter.catch(clientError(413, 'request entity too large (limit 102400)'), host);
+      expect(status).toHaveBeenCalledWith(413);
+      expect(json.mock.calls[0][0]).toEqual(
+        expect.objectContaining({ statusCode: 413, error: 'Payload Too Large', message: 'El pedido es demasiado grande' }),
+      );
+    });
+
+    it('un JSON mal formado es un 400 y no se repite el detalle del lector', () => {
+      const { host, status, json } = hostWith();
+      filter.catch(clientError(400, 'Unexpected token } in JSON at position 8'), host);
+      expect(status).toHaveBeenCalledWith(400);
+      expect(json.mock.calls[0][0]).toEqual(expect.objectContaining({ statusCode: 400, message: 'El pedido no es válido' }));
+    });
+
+    it('no se registra como error del servidor: no es una falla nuestra', () => {
+      const spy = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+      filter.catch(clientError(413, 'request entity too large'), hostWith().host);
+      expect(spy).not.toHaveBeenCalled();
+      spy.mockRestore();
+    });
+
+    it('un error con "status" que no se puede mostrar (sin expose) sigue siendo un 500 genérico', () => {
+      const { host, status } = hostWith();
+      jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+      filter.catch(Object.assign(new Error('detalle interno'), { status: 400 }), host);
+      expect(status).toHaveBeenCalledWith(500);
+    });
+  });
+
   describe('lo que queda en el log del servidor', () => {
     const logged = (): string => {
       const spy = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
